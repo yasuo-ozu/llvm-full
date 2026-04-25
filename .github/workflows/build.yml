@@ -1,0 +1,250 @@
+name: Build LLVM
+
+on:
+  push:
+    branches:
+      - "b*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            os: ubuntu-latest
+            archive_ext: tar.xz
+          - target: macos-aarch64
+            os: macos-14
+            archive_ext: tar.xz
+          - target: macos-x86_64
+            os: macos-13
+            archive_ext: tar.xz
+          - target: windows-msvc
+            os: windows-latest
+            archive_ext: zip
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.target }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version from branch name
+        id: version
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          VERSION="${BRANCH#b}"
+          MAJOR="${VERSION%%.*}"
+          MINOR="$(echo "$VERSION" | cut -d. -f2)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "major=${MAJOR}" >> "$GITHUB_OUTPUT"
+          echo "minor=${MINOR}" >> "$GITHUB_OUTPUT"
+          echo "Building LLVM ${VERSION} for ${{ matrix.target }}"
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y ninja-build cmake
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install ninja cmake
+
+      - name: Clone LLVM source
+        shell: bash
+        run: |
+          git clone --depth 1 --branch "llvmorg-${{ steps.version.outputs.version }}" \
+            https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project"
+
+      - name: Configure LLVM (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          cmake_policy_args=()
+          if [ "$MAJOR" -le 11 ]; then
+            cmake_policy_args=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+          fi
+          cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" -G Ninja \
+            "${cmake_policy_args[@]}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+            -DLLVM_ENABLE_PROJECTS="clang;lld" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_ENABLE_TERMINFO=OFF
+
+      - name: Configure LLVM (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          cmake_policy_args=()
+          if [ "$MAJOR" -le 11 ]; then
+            cmake_policy_args=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+          fi
+          cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" -G Ninja \
+            "${cmake_policy_args[@]}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+            -DLLVM_ENABLE_PROJECTS="clang;lld" \
+            -DLLVM_TARGETS_TO_BUILD="X86;AArch64"
+
+      - name: Configure LLVM (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          install_root="$RUNNER_TEMP/llvm-install"
+          toolset_args=()
+          if [ "$MAJOR" -le 11 ]; then
+            toolset_args=(-T v142)
+          fi
+          cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
+            -G "Visual Studio 17 2022" -A x64 \
+            "${toolset_args[@]}" \
+            -DCMAKE_INSTALL_PREFIX="$install_root" \
+            -DLLVM_ENABLE_PROJECTS="clang;lld" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_ENABLE_LIBXML2=OFF
+
+      - name: Build LLVM
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake --build "$RUNNER_TEMP/llvm-build" --config Release --target install --parallel
+          else
+            cmake --build "$RUNNER_TEMP/llvm-build" --target install --parallel
+          fi
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          PREFIX="$RUNNER_TEMP/llvm-install"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            test -f "$PREFIX/bin/clang.exe" || { echo "clang.exe not found"; exit 1; }
+          else
+            test -x "$PREFIX/bin/llvm-config" || { echo "llvm-config not found"; exit 1; }
+          fi
+          test -f "$PREFIX/include/llvm-c/Types.h" || { echo "LLVM C API headers not found"; exit 1; }
+          echo "LLVM installation verified"
+
+      - name: Generate file list
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARGET="${{ matrix.target }}"
+          PREFIX="$RUNNER_TEMP/llvm-install"
+          find "$PREFIX" -type f -printf '%P\t%s\n' | sort > "files-v${VERSION}-${TARGET}.txt" 2>/dev/null || \
+            find "$PREFIX" -type f | while read -r f; do
+              rel="${f#$PREFIX/}"
+              size=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo 0)
+              printf '%s\t%s\n' "$rel" "$size"
+            done | sort > "files-v${VERSION}-${TARGET}.txt"
+
+      - name: Create archive (tar.xz)
+        if: matrix.archive_ext == 'tar.xz'
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARGET="${{ matrix.target }}"
+          tar cJf "llvm-${VERSION}-${TARGET}.tar.xz" -C "$RUNNER_TEMP/llvm-install" .
+
+      - name: Create archive (zip)
+        if: matrix.archive_ext == 'zip'
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARGET="${{ matrix.target }}"
+          cd "$RUNNER_TEMP/llvm-install"
+          7z a "$GITHUB_WORKSPACE/llvm-${VERSION}-${TARGET}.zip" .
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: llvm-${{ steps.version.outputs.version }}-${{ matrix.target }}
+          path: llvm-${{ steps.version.outputs.version }}-${{ matrix.target }}.${{ matrix.archive_ext }}
+
+      - name: Upload file list artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}
+          path: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}.txt
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Create Release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse version from branch name
+        id: version
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          VERSION="${BRANCH#b}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' \) -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Collect file lists
+        shell: bash
+        run: |
+          find artifacts -name 'files-*.txt' -exec cp {} . \;
+          ls -la files-*.txt
+
+      - name: Commit file lists
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add files-*.txt
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "Add file lists for v${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Force update version tag
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag -f "v${VERSION}"
+          git push -f origin "v${VERSION}"
+
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: LLVM ${{ steps.version.outputs.version }}
+          body: |
+            Prebuilt LLVM ${{ steps.version.outputs.version }} archives with full API and clang.
+
+            ## Archives
+            - `llvm-${{ steps.version.outputs.version }}-linux-x86_64.tar.xz` - Linux x86_64
+            - `llvm-${{ steps.version.outputs.version }}-macos-aarch64.tar.xz` - macOS ARM64
+            - `llvm-${{ steps.version.outputs.version }}-macos-x86_64.tar.xz` - macOS Intel
+            - `llvm-${{ steps.version.outputs.version }}-windows-msvc.zip` - Windows x64 (MSVC)
+          files: release-assets/*
+          draft: false
+          prerelease: false

@@ -1,0 +1,15 @@
+[package]
+name = "llvm-full"
+version = "0.1.0"
+edition = "2021"
+description = "Download and provide prebuilt LLVM archives from llvm-full releases"
+license = "Apache-2.0 WITH LLVM-exception"
+repository = "https://github.com/yasuo-ozu/llvm-full"
+keywords = ["llvm", "clang", "prebuilt", "build-dependencies"]
+categories = ["development-tools::build-utils"]
+
+[build-dependencies]
+ureq = "2"
+tar = "0.4"
+xz2 = "0.1"
+zip = "2"
