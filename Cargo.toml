@@ -8,6 +8,21 @@ repository = "https://github.com/yasuo-ozu/llvm-full"
 keywords = ["llvm", "clang", "prebuilt", "build-dependencies"]
 categories = ["development-tools::build-utils"]
 
+[features]
+llvm10-0 = []
+llvm11-0 = []
+llvm12-0 = []
+llvm13-0 = []
+llvm14-0 = []
+llvm15-0 = []
+llvm16-0 = []
+llvm17-0 = []
+llvm18-1 = []
+llvm19-1 = []
+llvm20-1 = []
+llvm21-1 = []
+llvm22-1 = []
+
 [build-dependencies]
 ureq = "2"
 tar = "0.4"

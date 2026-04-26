@@ -7,24 +7,38 @@
 //! for your target platform. Downstream `-sys` crates can use the
 //! `DEP_LLVM_FULL_ROOT` environment variable to locate the LLVM installation.
 //!
-//! ## Environment Variables
+//! ## Version Selection
 //!
-//! - `LLVM_FULL_VERSION` (required): The LLVM version to download (e.g. `18.1.8`)
-//! - `LLVM_FULL_PREFIX` (optional): Skip download and use an existing LLVM installation
+//! Enable exactly one feature flag to select the LLVM version:
+//!
+//! ```toml
+//! [build-dependencies]
+//! llvm-full = { version = "0.1", features = ["llvm18-1"] }
+//! ```
+//!
+//! Available features: `llvm10-0`, `llvm11-0`, `llvm12-0`, `llvm13-0`,
+//! `llvm14-0`, `llvm15-0`, `llvm16-0`, `llvm17-0`, `llvm18-1`, `llvm19-1`,
+//! `llvm20-1`, `llvm21-1`, `llvm22-1`.
+//!
+//! Alternatively, set `LLVM_FULL_PREFIX` to skip download and use an existing
+//! LLVM installation.
 
 use std::path::{Path, PathBuf};
 
 /// Returns the LLVM installation prefix set by the build script.
 ///
-/// This reads from the `DEP_LLVM_FULL_ROOT` environment variable, which is set
-/// by this crate's build script when used as a dependency.
-///
-/// When used directly (not as a dependency), falls back to `LLVM_FULL_PREFIX`.
+/// Resolution order:
+/// 1. `DEP_LLVM_FULL_ROOT` (set for downstream crates using this as a build-dependency)
+/// 2. `LLVM_FULL_PREFIX` runtime environment variable
+/// 3. `LLVM_FULL_PREFIX` compile-time value (set by this crate's build script)
 pub fn llvm_prefix() -> PathBuf {
     if let Ok(root) = std::env::var("DEP_LLVM_FULL_ROOT") {
         return PathBuf::from(root);
     }
     if let Ok(prefix) = std::env::var("LLVM_FULL_PREFIX") {
+        return PathBuf::from(prefix);
+    }
+    if let Some(prefix) = option_env!("LLVM_FULL_PREFIX") {
         return PathBuf::from(prefix);
     }
     panic!("LLVM prefix not found. Use this crate as a build-dependency, or set LLVM_FULL_PREFIX.");
@@ -63,4 +77,34 @@ pub fn verify_installation() -> bool {
             .join("llvm-c")
             .join("TargetMachine.h")
             .exists()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_llvm_prefix_exists() {
+        let prefix = llvm_prefix();
+        assert!(
+            prefix.exists(),
+            "LLVM prefix does not exist: {}",
+            prefix.display()
+        );
+    }
+
+    #[test]
+    fn test_llvm_include_dir_has_headers() {
+        let include = llvm_include_dir();
+        assert!(
+            include.join("llvm-c").join("Types.h").exists(),
+            "Missing llvm-c/Types.h in {}",
+            include.display()
+        );
+    }
+
+    #[test]
+    fn test_verify_installation() {
+        assert!(verify_installation(), "LLVM installation verification failed");
+    }
 }

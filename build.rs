@@ -5,16 +5,62 @@ use std::path::{Path, PathBuf};
 
 const REPO: &str = "yasuo-ozu/llvm-full";
 
+const VERSION_TABLE: &[(&str, &str)] = &[
+    ("CARGO_FEATURE_LLVM10_0", "10.0.1"),
+    ("CARGO_FEATURE_LLVM11_0", "11.0.1"),
+    ("CARGO_FEATURE_LLVM12_0", "12.0.1"),
+    ("CARGO_FEATURE_LLVM13_0", "13.0.1"),
+    ("CARGO_FEATURE_LLVM14_0", "14.0.6"),
+    ("CARGO_FEATURE_LLVM15_0", "15.0.7"),
+    ("CARGO_FEATURE_LLVM16_0", "16.0.6"),
+    ("CARGO_FEATURE_LLVM17_0", "17.0.6"),
+    ("CARGO_FEATURE_LLVM18_1", "18.1.8"),
+    ("CARGO_FEATURE_LLVM19_1", "19.1.7"),
+    ("CARGO_FEATURE_LLVM20_1", "20.1.8"),
+    ("CARGO_FEATURE_LLVM21_1", "21.1.4"),
+    ("CARGO_FEATURE_LLVM22_1", "22.1.0"),
+];
+
+fn version_from_features() -> Option<&'static str> {
+    let mut selected = None;
+    for &(env_key, version) in VERSION_TABLE {
+        if env::var(env_key).is_ok() {
+            if selected.is_some() {
+                panic!(
+                    "Multiple LLVM version features enabled. Enable exactly one llvmXX-Y feature."
+                );
+            }
+            selected = Some(version);
+        }
+    }
+    selected
+}
+
 fn target_name() -> Option<(&'static str, &'static str)> {
     let target_os = env::var("CARGO_CFG_TARGET_OS").ok()?;
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").ok()?;
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
 
     match (target_os.as_str(), target_arch.as_str(), target_env.as_str()) {
-        ("linux", "x86_64", _) => Some(("linux-x86_64", "tar.xz")),
+        // Linux glibc
+        ("linux", "x86_64", "gnu") | ("linux", "x86_64", "") => Some(("linux-x86_64", "tar.xz")),
+        ("linux", "aarch64", "gnu") | ("linux", "aarch64", "") => {
+            Some(("linux-aarch64", "tar.xz"))
+        }
+        ("linux", "x86", "gnu") | ("linux", "x86", "") => Some(("linux-i686", "tar.xz")),
+        // Linux musl
+        ("linux", "x86_64", "musl") => Some(("linux-x86_64-musl", "tar.xz")),
+        ("linux", "aarch64", "musl") => Some(("linux-aarch64-musl", "tar.xz")),
+        // macOS
         ("macos", "aarch64", _) => Some(("macos-aarch64", "tar.xz")),
         ("macos", "x86_64", _) => Some(("macos-x86_64", "tar.xz")),
+        // Windows MSVC
         ("windows", "x86_64", "msvc") => Some(("windows-msvc", "zip")),
+        ("windows", "aarch64", "msvc") => Some(("windows-aarch64-msvc", "zip")),
+        ("windows", "x86", "msvc") => Some(("windows-i686-msvc", "zip")),
+        // Windows GNU
+        ("windows", "x86_64", "gnu") => Some(("windows-gnu", "zip")),
+        ("windows", "x86", "gnu") => Some(("windows-i686-gnu", "zip")),
         _ => None,
     }
 }
@@ -51,7 +97,6 @@ fn extract_zip(data: &[u8], dest: &Path) -> Result<(), String> {
 }
 
 fn main() {
-    println!("cargo:rerun-if-env-changed=LLVM_FULL_VERSION");
     println!("cargo:rerun-if-env-changed=LLVM_FULL_PREFIX");
 
     // If LLVM_FULL_PREFIX is set, use that directly
@@ -61,9 +106,11 @@ fn main() {
         return;
     }
 
-    let version = env::var("LLVM_FULL_VERSION").unwrap_or_else(|_| {
+    let version = version_from_features().unwrap_or_else(|| {
         panic!(
-            "LLVM_FULL_VERSION environment variable must be set (e.g. LLVM_FULL_VERSION=18.1.8)"
+            "No LLVM version feature enabled. Enable exactly one of: \
+             llvm10-0, llvm11-0, llvm12-0, llvm13-0, llvm14-0, llvm15-0, llvm16-0, \
+             llvm17-0, llvm18-1, llvm19-1, llvm20-1, llvm21-1, llvm22-1"
         );
     });
 
@@ -80,8 +127,16 @@ fn main() {
     let llvm_dir = out_dir.join(format!("llvm-{version}"));
 
     // Check if already extracted
-    if llvm_dir.join("include").join("llvm-c").join("Types.h").exists() {
-        eprintln!("LLVM {version} already extracted at {}", llvm_dir.display());
+    if llvm_dir
+        .join("include")
+        .join("llvm-c")
+        .join("Types.h")
+        .exists()
+    {
+        eprintln!(
+            "LLVM {version} already extracted at {}",
+            llvm_dir.display()
+        );
         emit_metadata(&llvm_dir);
         return;
     }
@@ -111,6 +166,7 @@ fn emit_metadata(llvm_dir: &Path) {
     println!("cargo:root={llvm_dir_str}");
     println!("cargo:rustc-link-search=native={llvm_dir_str}/lib");
     println!("cargo:include={llvm_dir_str}/include");
+    println!("cargo:rustc-env=LLVM_FULL_PREFIX={llvm_dir_str}");
 
     // Parse version from directory name or llvm-config if available
     if let Some(name) = llvm_dir.file_name().and_then(|n| n.to_str()) {

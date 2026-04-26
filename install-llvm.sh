@@ -30,7 +30,27 @@ ARCH="$(uname -m)"
 
 case "$OS" in
   Linux)
-    TARGET="linux-x86_64"
+    # Detect musl libc
+    MUSL=""
+    if command -v ldd >/dev/null 2>&1; then
+      if ldd --version 2>&1 | head -1 | grep -qi musl; then
+        MUSL="-musl"
+      fi
+    elif [ -f /etc/alpine-release ]; then
+      MUSL="-musl"
+    fi
+
+    case "$ARCH" in
+      aarch64|arm64)
+        TARGET="linux-aarch64${MUSL}"
+        ;;
+      i686|i386)
+        TARGET="linux-i686"
+        ;;
+      *)
+        TARGET="linux-x86_64${MUSL}"
+        ;;
+    esac
     EXT="tar.xz"
     ;;
   Darwin)
@@ -44,8 +64,29 @@ case "$OS" in
     esac
     EXT="tar.xz"
     ;;
-  MINGW*|MSYS*|CYGWIN*)
-    TARGET="windows-msvc"
+  MINGW*|MSYS*)
+    case "$ARCH" in
+      i686|i386)
+        TARGET="windows-i686-gnu"
+        ;;
+      *)
+        TARGET="windows-gnu"
+        ;;
+    esac
+    EXT="zip"
+    ;;
+  CYGWIN*)
+    case "$ARCH" in
+      aarch64|arm64)
+        TARGET="windows-aarch64-msvc"
+        ;;
+      i686|i386)
+        TARGET="windows-i686-msvc"
+        ;;
+      *)
+        TARGET="windows-msvc"
+        ;;
+    esac
     EXT="zip"
     ;;
   *)
