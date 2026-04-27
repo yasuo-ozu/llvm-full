@@ -1,0 +1,60 @@
+name: "Setup Build Dependencies"
+description: "Install build dependencies for LLVM compilation"
+
+inputs:
+  target:
+    description: "Build target name"
+    required: true
+  container:
+    description: "Container image name (if using a container)"
+    required: false
+    default: ""
+  msys2:
+    description: "MSYS2 system (MINGW64 or MINGW32)"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install build dependencies (Alpine container)
+      if: startsWith(inputs.container, 'alpine')
+      shell: sh
+      run: apk add --no-cache cmake ninja gcc g++ musl-dev linux-headers python3 git bash
+
+    - name: Install build dependencies (i386 Ubuntu container)
+      if: inputs.container == 'i386/ubuntu:24.04'
+      shell: bash
+      run: |
+        apt-get update -qq
+        apt-get install -qq -y cmake ninja-build gcc g++ python3 git
+
+    - name: Install build dependencies (Linux native)
+      if: runner.os == 'Linux' && inputs.container == ''
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -qq -y ninja-build cmake
+
+    - name: Install build dependencies (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install ninja cmake
+
+    - name: Set up MSYS2 (MINGW64)
+      if: inputs.msys2 == 'MINGW64'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: git
+        pacboy: toolchain:p cmake:p ninja:p
+
+    - name: Set up MSYS2 (MINGW32)
+      if: inputs.msys2 == 'MINGW32'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW32
+        update: true
+        install: git
+        pacboy: toolchain:p cmake:p ninja:p

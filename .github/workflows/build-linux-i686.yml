@@ -1,0 +1,15 @@
+name: Build linux-i686
+
+on:
+  push:
+    branches: ["b*.*.*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: "i386/ubuntu:24.04"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-target
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,14 @@
+name: Build macos-x86_64
+
+on:
+  push:
+    branches: ["b*.*.*"]
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-target
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

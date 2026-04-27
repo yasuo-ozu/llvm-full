@@ -1,0 +1,14 @@
+name: Build windows-aarch64-msvc
+
+on:
+  push:
+    branches: ["b*.*.*"]
+
+jobs:
+  build:
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-target
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

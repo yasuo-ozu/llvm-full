@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows:
+      - "Build linux-x86_64"
+      - "Build linux-aarch64"
+      - "Build linux-x86_64-musl"
+      - "Build linux-aarch64-musl"
+      - "Build linux-i686"
+      - "Build macos-aarch64"
+      - "Build macos-x86_64"
+      - "Build windows-msvc"
+      - "Build windows-aarch64-msvc"
+      - "Build windows-i686-msvc"
+      - "Build windows-gnu"
+      - "Build windows-i686-gnu"
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'b')
+    name: Create Release
+
+    steps:
+      - name: Check all builds completed
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          REPO="${{ github.repository }}"
+          VERSION="${BRANCH#b}"
+
+          BUILDS=(
+            "build-linux-x86_64.yml"
+            "build-linux-aarch64.yml"
+            "build-linux-x86_64-musl.yml"
+            "build-linux-aarch64-musl.yml"
+            "build-linux-i686.yml"
+            "build-macos-aarch64.yml"
+            "build-macos-x86_64.yml"
+            "build-windows-msvc.yml"
+            "build-windows-aarch64-msvc.yml"
+            "build-windows-i686-msvc.yml"
+            "build-windows-gnu.yml"
+            "build-windows-i686-gnu.yml"
+          )
+
+          for wf in "${BUILDS[@]}"; do
+            conclusion=$(gh run list --repo "$REPO" \
+              --workflow "$wf" --branch "$BRANCH" --limit 5 \
+              --json conclusion,headSha \
+              --jq "[.[] | select(.headSha == \"$SHA\")] | .[0].conclusion")
+            if [ "$conclusion" != "success" ]; then
+              echo "Workflow $wf not yet successful (got: ${conclusion:-none}), skipping release"
+              exit 0
+            fi
+          done
+
+          echo "All 12 builds complete for $VERSION ($SHA)"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "all_complete=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: steps.check.outputs.all_complete == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Download all build artifacts
+        if: steps.check.outputs.all_complete == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          REPO="${{ github.repository }}"
+          mkdir -p artifacts
+
+          BUILDS=(
+            "build-linux-x86_64.yml"
+            "build-linux-aarch64.yml"
+            "build-linux-x86_64-musl.yml"
+            "build-linux-aarch64-musl.yml"
+            "build-linux-i686.yml"
+            "build-macos-aarch64.yml"
+            "build-macos-x86_64.yml"
+            "build-windows-msvc.yml"
+            "build-windows-aarch64-msvc.yml"
+            "build-windows-i686-msvc.yml"
+            "build-windows-gnu.yml"
+            "build-windows-i686-gnu.yml"
+          )
+
+          for wf in "${BUILDS[@]}"; do
+            RUN_ID=$(gh run list --repo "$REPO" \
+              --workflow "$wf" --branch "$BRANCH" --limit 5 \
+              --json databaseId,headSha \
+              --jq "[.[] | select(.headSha == \"$SHA\")] | .[0].databaseId")
+            echo "Downloading artifacts from $wf (run $RUN_ID)"
+            gh run download "$RUN_ID" --repo "$REPO" --dir artifacts/
+          done
+
+      - name: Collect release assets
+        if: steps.check.outputs.all_complete == 'true'
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' -o -name 'files-*.txt' \) -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Commit file lists
+        if: steps.check.outputs.all_complete == 'true'
+        run: |
+          VERSION="${{ steps.check.outputs.version }}"
+          find artifacts -name 'files-*.txt' -exec cp {} . \;
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add files-*.txt
+          git diff --cached --quiet && echo "No changes to commit" || \
+            git commit -m "Add file lists for v${VERSION}"
+          git push
+
+      - name: Force update version tag
+        if: steps.check.outputs.all_complete == 'true'
+        run: |
+          VERSION="${{ steps.check.outputs.version }}"
+          git tag -f "v${VERSION}"
+          git push -f origin "v${VERSION}"
+
+      - name: Create or update GitHub Release
+        if: steps.check.outputs.all_complete == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.check.outputs.version }}
+          name: LLVM ${{ steps.check.outputs.version }}
+          body: |
+            Prebuilt LLVM ${{ steps.check.outputs.version }} archives with full API and clang.
+
+            ## Archives
+            | Target | Archive | Files |
+            |--------|---------|-------|
+            | Linux x86_64 | `llvm-${{ steps.check.outputs.version }}-linux-x86_64.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-linux-x86_64.txt) |
+            | Linux AArch64 | `llvm-${{ steps.check.outputs.version }}-linux-aarch64.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-linux-aarch64.txt) |
+            | Linux x86_64 (musl) | `llvm-${{ steps.check.outputs.version }}-linux-x86_64-musl.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-linux-x86_64-musl.txt) |
+            | Linux AArch64 (musl) | `llvm-${{ steps.check.outputs.version }}-linux-aarch64-musl.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-linux-aarch64-musl.txt) |
+            | Linux i686 | `llvm-${{ steps.check.outputs.version }}-linux-i686.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-linux-i686.txt) |
+            | macOS ARM64 | `llvm-${{ steps.check.outputs.version }}-macos-aarch64.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-macos-aarch64.txt) |
+            | macOS Intel | `llvm-${{ steps.check.outputs.version }}-macos-x86_64.tar.xz` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-macos-x86_64.txt) |
+            | Windows x64 (MSVC) | `llvm-${{ steps.check.outputs.version }}-windows-msvc.zip` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-windows-msvc.txt) |
+            | Windows x64 (GNU) | `llvm-${{ steps.check.outputs.version }}-windows-gnu.zip` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-windows-gnu.txt) |
+            | Windows ARM64 (MSVC) | `llvm-${{ steps.check.outputs.version }}-windows-aarch64-msvc.zip` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-windows-aarch64-msvc.txt) |
+            | Windows i686 (MSVC) | `llvm-${{ steps.check.outputs.version }}-windows-i686-msvc.zip` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-windows-i686-msvc.txt) |
+            | Windows i686 (GNU) | `llvm-${{ steps.check.outputs.version }}-windows-i686-gnu.zip` | [files](https://github.com/yasuo-ozu/llvm-full/releases/download/v${{ steps.check.outputs.version }}/files-v${{ steps.check.outputs.version }}-windows-i686-gnu.txt) |
+          files: release-assets/*
+          draft: false
+          prerelease: false

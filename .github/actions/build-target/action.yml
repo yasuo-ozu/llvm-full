@@ -1,0 +1,84 @@
+name: "Build Target"
+description: "Auto-detect target from workflow filename, build and package LLVM"
+
+inputs:
+  github_token:
+    description: "GitHub token for API access"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Detect target and config
+      id: config
+      shell: bash
+      run: |
+        # Detect target from calling workflow filename
+        # GITHUB_WORKFLOW_REF = "owner/repo/.github/workflows/build-linux-x86_64.yml@refs/heads/b18.1.8"
+        WORKFLOW_PATH="${GITHUB_WORKFLOW_REF%%@*}"   # strip @refs/... first
+        WORKFLOW_FILE="${WORKFLOW_PATH##*/}"          # then extract filename
+        TARGET="${WORKFLOW_FILE#build-}"
+        TARGET="${TARGET%.yml}"
+
+        # Parse version from branch name
+        VERSION="${GITHUB_REF_NAME#b}"
+        MAJOR="${VERSION%%.*}"
+
+        echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+        echo "major=${MAJOR}" >> "$GITHUB_OUTPUT"
+
+        # Lookup target config
+        case "$TARGET" in
+          linux-x86_64)         LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
+          linux-aarch64)        LLVM_TARGETS="AArch64";     EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
+          linux-x86_64-musl)    LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="alpine:3.21" ;;
+          linux-aarch64-musl)   LLVM_TARGETS="AArch64";     EXT="tar.xz"; MSYS2="";       CONTAINER="alpine:3.21" ;;
+          linux-i686)           LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="i386/ubuntu:24.04" ;;
+          macos-aarch64)        LLVM_TARGETS="X86;AArch64"; EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
+          macos-x86_64)         LLVM_TARGETS="X86;AArch64"; EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
+          windows-msvc)         LLVM_TARGETS="X86";         EXT="zip";    MSYS2="";       CONTAINER="" ;;
+          windows-aarch64-msvc) LLVM_TARGETS="AArch64";     EXT="zip";    MSYS2="";       CONTAINER="" ;;
+          windows-i686-msvc)    LLVM_TARGETS="X86";         EXT="zip";    MSYS2="";       CONTAINER="" ;;
+          windows-gnu)          LLVM_TARGETS="X86";         EXT="zip";    MSYS2="MINGW64"; CONTAINER="" ;;
+          windows-i686-gnu)     LLVM_TARGETS="X86";         EXT="zip";    MSYS2="MINGW32"; CONTAINER="" ;;
+          *) echo "Unknown target: $TARGET"; exit 1 ;;
+        esac
+
+        echo "llvm_targets=${LLVM_TARGETS}" >> "$GITHUB_OUTPUT"
+        echo "archive_ext=${EXT}" >> "$GITHUB_OUTPUT"
+        echo "msys2=${MSYS2}" >> "$GITHUB_OUTPUT"
+        echo "container=${CONTAINER}" >> "$GITHUB_OUTPUT"
+        echo "Detected target=$TARGET version=$VERSION llvm_targets=$LLVM_TARGETS ext=$EXT msys2=$MSYS2"
+
+    - name: Setup build dependencies
+      uses: ./.github/actions/setup-build-deps
+      with:
+        target: ${{ steps.config.outputs.target }}
+        container: ${{ steps.config.outputs.container }}
+        msys2: ${{ steps.config.outputs.msys2 }}
+
+    - name: Build and package LLVM
+      id: build
+      uses: ./.github/actions/build-and-package-llvm
+      with:
+        version: ${{ steps.config.outputs.version }}
+        major: ${{ steps.config.outputs.major }}
+        target: ${{ steps.config.outputs.target }}
+        llvm_targets: ${{ steps.config.outputs.llvm_targets }}
+        archive_ext: ${{ steps.config.outputs.archive_ext }}
+        msys2: ${{ steps.config.outputs.msys2 }}
+        github_token: ${{ inputs.github_token }}
+
+    - name: Upload archive artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: llvm-${{ steps.config.outputs.version }}-${{ steps.config.outputs.target }}
+        path: llvm-${{ steps.config.outputs.version }}-${{ steps.config.outputs.target }}.${{ steps.config.outputs.archive_ext }}
+
+    - name: Upload file list artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: files-v${{ steps.config.outputs.version }}-${{ steps.config.outputs.target }}
+        path: files-v${{ steps.config.outputs.version }}-${{ steps.config.outputs.target }}.txt

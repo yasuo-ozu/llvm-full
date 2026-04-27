@@ -2,6 +2,24 @@
 
 Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platforms.
 
+## Build Status
+
+| Version | Status |
+|--------:|--------|
+| 22.1.0 | [![Build][b-22.1.0]][w-22.1.0] |
+| 21.1.4 | [![Build][b-21.1.4]][w-21.1.4] |
+| 20.1.8 | [![Build][b-20.1.8]][w-20.1.8] |
+| 19.1.7 | [![Build][b-19.1.7]][w-19.1.7] |
+| 18.1.8 | [![Build][b-18.1.8]][w-18.1.8] |
+| 17.0.6 | [![Build][b-17.0.6]][w-17.0.6] |
+| 16.0.6 | [![Build][b-16.0.6]][w-16.0.6] |
+| 15.0.7 | [![Build][b-15.0.7]][w-15.0.7] |
+| 14.0.6 | [![Build][b-14.0.6]][w-14.0.6] |
+| 13.0.1 | [![Build][b-13.0.1]][w-13.0.1] |
+| 12.0.1 | [![Build][b-12.0.1]][w-12.0.1] |
+| 11.0.1 | [![Build][b-11.0.1]][w-11.0.1] |
+| 10.0.1 | [![Build][b-10.0.1]][w-10.0.1] |
+
 ## Why llvm-full?
 
 | Feature | llvm-full | apt.llvm.org | Homebrew | Official releases |
@@ -143,6 +161,59 @@ Or with a custom install prefix:
 curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh | bash -s -- 18.1.8 /usr/local
 ```
 
+### cibuildwheel (GitHub Actions)
+
+Complete example for building Python wheels that depend on LLVM using [cibuildwheel](https://cibuildwheel.pypa.io/):
+
+```yaml
+name: Build wheels
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-14, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Install LLVM on the host for Windows (not containerized)
+      - name: Install LLVM (Windows)
+        if: runner.os == 'Windows'
+        uses: yasuo-ozu/llvm-full@main
+        with:
+          version: "18.1.8"
+          env: true
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2
+        env:
+          # Linux: install inside the manylinux/musllinux container
+          CIBW_BEFORE_ALL_LINUX: >
+            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
+            | bash -s -- 18.1.8
+          CIBW_ENVIRONMENT_LINUX: >
+            LLVM_PREFIX=/opt/llvm
+            LLVM_CONFIG=/opt/llvm/bin/llvm-config
+            LIBCLANG_PATH=/opt/llvm/lib
+            PATH=/opt/llvm/bin:$PATH
+          # macOS: install via the shell script
+          CIBW_BEFORE_ALL_MACOS: >
+            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
+            | bash -s -- 18.1.8
+          CIBW_ENVIRONMENT_MACOS: >
+            LLVM_PREFIX=/opt/llvm
+            LLVM_CONFIG=/opt/llvm/bin/llvm-config
+            LIBCLANG_PATH=/opt/llvm/lib
+            PATH=/opt/llvm/bin:$PATH
+          # Windows: uses the host-installed LLVM (set by the action above)
+```
+
 ### Rust Crate
 
 Add to your `Cargo.toml` with a version feature flag:
@@ -221,7 +292,7 @@ git checkout -b b18.1.8
 git push origin b18.1.8
 ```
 
-The CI workflow will build LLVM from source for all targets, create archives, and upload them to GitHub Releases tagged `v18.1.8`.
+The CI workflows will build LLVM from source for all targets, create archives, and upload them to GitHub Releases tagged `v18.1.8`.
 
 ## License
 
@@ -230,6 +301,33 @@ LLVM is distributed under the [Apache License 2.0 with LLVM Exceptions](https://
 <!-- Reference link definitions -->
 
 [dl]: https://img.shields.io/badge/download-blue
+
+[b-22.1.0]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b22.1.0
+[b-21.1.4]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b21.1.4
+[b-20.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b20.1.8
+[b-19.1.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b19.1.7
+[b-18.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b18.1.8
+[b-17.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b17.0.6
+[b-16.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b16.0.6
+[b-15.0.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b15.0.7
+[b-14.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b14.0.6
+[b-13.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b13.0.1
+[b-12.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b12.0.1
+[b-11.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b11.0.1
+[b-10.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b10.0.1
+[w-22.1.0]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab22.1.0
+[w-21.1.4]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab21.1.4
+[w-20.1.8]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab20.1.8
+[w-19.1.7]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab19.1.7
+[w-18.1.8]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab18.1.8
+[w-17.0.6]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab17.0.6
+[w-16.0.6]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab16.0.6
+[w-15.0.7]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab15.0.7
+[w-14.0.6]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab14.0.6
+[w-13.0.1]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab13.0.1
+[w-12.0.1]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab12.0.1
+[w-11.0.1]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab11.0.1
+[w-10.0.1]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab10.0.1
 
 [r-22.1.0]: https://github.com/yasuo-ozu/llvm-full/releases/tag/v22.1.0
 [r-21.1.4]: https://github.com/yasuo-ozu/llvm-full/releases/tag/v21.1.4

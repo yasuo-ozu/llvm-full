@@ -1,0 +1,346 @@
+name: "Build and Package LLVM"
+description: "Clone, configure, build, verify, and package LLVM for a specific target"
+
+inputs:
+  version:
+    description: "Full LLVM version (e.g. 18.1.8)"
+    required: true
+  major:
+    description: "LLVM major version number"
+    required: true
+  target:
+    description: "Build target name"
+    required: true
+  llvm_targets:
+    description: "LLVM targets to build (e.g. X86;AArch64)"
+    required: true
+  archive_ext:
+    description: "Archive extension (tar.xz or zip)"
+    required: true
+  msys2:
+    description: "MSYS2 system (MINGW64 or MINGW32), empty if not using MSYS2"
+    required: false
+    default: ""
+  github_token:
+    description: "GitHub token for API access"
+    required: false
+    default: ""
+
+outputs:
+  archive_name:
+    description: "Name of the created archive file"
+    value: ${{ steps.package.outputs.archive_name }}
+  files_name:
+    description: "Name of the file list"
+    value: ${{ steps.filelist.outputs.files_name }}
+  source:
+    description: "How LLVM was obtained: 'built' or 'prebuilt'"
+    value: ${{ steps.check-official.outputs.source }}
+
+runs:
+  using: composite
+  steps:
+    # ── Check for official LLVM release archives ─────────────────────
+    - name: Check for official LLVM release archive
+      id: check-official
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        TARGET="${{ inputs.target }}"
+        MAJOR="${{ inputs.major }}"
+        INSTALL_PREFIX="$RUNNER_TEMP/llvm-install"
+
+        # Only check for targets that might have official archives
+        # Official LLVM releases provide archives for linux-x86_64, linux-aarch64,
+        # macos-x86_64, macos-aarch64 (varies by version)
+        case "$TARGET" in
+          linux-x86_64|linux-aarch64|macos-aarch64|macos-x86_64)
+            ;;
+          *)
+            echo "source=build" >> "$GITHUB_OUTPUT"
+            echo "No official archives expected for $TARGET, will build from source"
+            exit 0
+            ;;
+        esac
+
+        api_url="https://api.github.com/repos/llvm/llvm-project/releases/tags/llvmorg-${VERSION}"
+        github_headers=(-H "User-Agent: llvm-full-ci")
+        TOKEN="${{ inputs.github_token }}"
+        if [ -n "$TOKEN" ]; then
+          github_headers+=(-H "Authorization: Bearer $TOKEN")
+        fi
+
+        echo "Checking for official LLVM release at $api_url"
+        release_json="$(curl -fsSL --retry 3 --retry-delay 2 "${github_headers[@]}" "$api_url" 2>/dev/null)" || {
+          echo "source=build" >> "$GITHUB_OUTPUT"
+          echo "Could not fetch release info, will build from source"
+          exit 0
+        }
+
+        archive_url=""
+        case "$TARGET" in
+          linux-x86_64)
+            archive_url="$(echo "$release_json" | jq -r \
+              --arg ver "$VERSION" '
+                .assets
+                | map(select(.name | test("^clang\\+llvm-.*linux-gnu.*\\.tar\\..*$")))
+                | map(select(.name | contains($ver)))
+                | map(select(.name | test("x86_64|amd64")))
+                | .[0].browser_download_url // empty
+              ')"
+            ;;
+          linux-aarch64)
+            archive_url="$(echo "$release_json" | jq -r \
+              --arg ver "$VERSION" '
+                .assets
+                | map(select(.name | test("^clang\\+llvm-.*linux-gnu.*\\.tar\\..*$")))
+                | map(select(.name | contains($ver)))
+                | map(select(.name | test("aarch64|arm64")))
+                | .[0].browser_download_url // empty
+              ')"
+            ;;
+          macos-aarch64)
+            archive_url="$(echo "$release_json" | jq -r \
+              --arg ver "$VERSION" '
+                .assets
+                | map(select(.name | test("^clang\\+llvm-.*apple-darwin.*\\.tar\\..*$")))
+                | map(select(.name | contains($ver)))
+                | map(select(.name | test("arm64|aarch64")))
+                | .[0].browser_download_url // empty
+              ')"
+            ;;
+          macos-x86_64)
+            archive_url="$(echo "$release_json" | jq -r \
+              --arg ver "$VERSION" '
+                .assets
+                | map(select(.name | test("^clang\\+llvm-.*apple-darwin.*\\.tar\\..*$")))
+                | map(select(.name | contains($ver)))
+                | map(select(.name | test("x86_64")))
+                | .[0].browser_download_url // empty
+              ')"
+            ;;
+        esac
+
+        if [ -n "$archive_url" ]; then
+          echo "Found official archive: $archive_url"
+          echo "Downloading and extracting..."
+          archive_path="$RUNNER_TEMP/official-llvm-archive"
+          curl -fsSL --retry 3 --retry-delay 2 "${github_headers[@]}" "$archive_url" -o "$archive_path" || {
+            echo "source=build" >> "$GITHUB_OUTPUT"
+            echo "Download failed, will build from source"
+            exit 0
+          }
+          rm -rf "$INSTALL_PREFIX"
+          mkdir -p "$INSTALL_PREFIX"
+          tar -xf "$archive_path" -C "$INSTALL_PREFIX" --strip-components=1
+          rm -f "$archive_path"
+
+          # Verify the extracted archive has the expected structure
+          if [ -f "$INSTALL_PREFIX/include/llvm-c/Types.h" ]; then
+            echo "source=prebuilt" >> "$GITHUB_OUTPUT"
+            echo "Successfully extracted official LLVM archive"
+          else
+            echo "source=build" >> "$GITHUB_OUTPUT"
+            echo "Official archive missing expected headers, will build from source"
+            rm -rf "$INSTALL_PREFIX"
+          fi
+        else
+          echo "source=build" >> "$GITHUB_OUTPUT"
+          echo "No official archive found for $TARGET, will build from source"
+        fi
+
+    # ── Clone source (only if building) ──────────────────────────────
+    - name: Clone LLVM source
+      if: steps.check-official.outputs.source == 'build'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch "llvmorg-${{ inputs.version }}" \
+          https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project"
+
+    # ── Configure ────────────────────────────────────────────────────
+    - name: Configure LLVM (Unix / container)
+      if: steps.check-official.outputs.source == 'build' && (runner.os == 'Linux' || runner.os == 'macOS')
+      shell: bash
+      run: |
+        MAJOR="${{ inputs.major }}"
+        cmake_args=()
+        if [ "$MAJOR" -le 11 ]; then
+          cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+        fi
+        cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" -G Ninja \
+          "${cmake_args[@]}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_TERMINFO=OFF
+
+    - name: Configure LLVM (Windows MSVC x64)
+      if: steps.check-official.outputs.source == 'build' && inputs.target == 'windows-msvc'
+      shell: bash
+      run: |
+        MAJOR="${{ inputs.major }}"
+        toolset_args=()
+        if [ "$MAJOR" -le 11 ]; then
+          toolset_args=(-T v142)
+        fi
+        cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
+          -G "Visual Studio 17 2022" -A x64 \
+          "${toolset_args[@]}" \
+          -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_LIBXML2=OFF
+
+    - name: Configure LLVM (Windows MSVC ARM64)
+      if: steps.check-official.outputs.source == 'build' && inputs.target == 'windows-aarch64-msvc'
+      shell: bash
+      run: |
+        cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
+          -G "Visual Studio 17 2022" -A ARM64 \
+          -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_LIBXML2=OFF
+
+    - name: Configure LLVM (Windows MSVC i686)
+      if: steps.check-official.outputs.source == 'build' && inputs.target == 'windows-i686-msvc'
+      shell: bash
+      run: |
+        MAJOR="${{ inputs.major }}"
+        toolset_args=()
+        if [ "$MAJOR" -le 11 ]; then
+          toolset_args=(-T v142)
+        fi
+        cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
+          -G "Visual Studio 17 2022" -A Win32 \
+          "${toolset_args[@]}" \
+          -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_LIBXML2=OFF
+
+    - name: Configure LLVM (Windows GNU x64)
+      if: steps.check-official.outputs.source == 'build' && inputs.target == 'windows-gnu'
+      shell: msys2 {0}
+      run: |
+        MAJOR="${{ inputs.major }}"
+        SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
+        BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
+        INSTALL_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-install"
+        cmake_args=()
+        if [ "$MAJOR" -le 11 ]; then
+          cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+        fi
+        cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
+          "${cmake_args[@]}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_LIBXML2=OFF \
+          -DLLVM_ENABLE_TERMINFO=OFF \
+          -DLLVM_HOST_TRIPLE="x86_64-w64-windows-gnu"
+
+    - name: Configure LLVM (Windows GNU i686)
+      if: steps.check-official.outputs.source == 'build' && inputs.target == 'windows-i686-gnu'
+      shell: msys2 {0}
+      run: |
+        MAJOR="${{ inputs.major }}"
+        SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
+        BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
+        INSTALL_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-install"
+        cmake_args=()
+        if [ "$MAJOR" -le 11 ]; then
+          cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+        fi
+        cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
+          "${cmake_args[@]}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+          -DLLVM_ENABLE_PROJECTS="clang;lld" \
+          -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
+          -DLLVM_ENABLE_LIBXML2=OFF \
+          -DLLVM_ENABLE_TERMINFO=OFF \
+          -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu"
+
+    # ── Build ────────────────────────────────────────────────────────
+    - name: Build LLVM (MSYS2)
+      if: steps.check-official.outputs.source == 'build' && inputs.msys2 != ''
+      shell: msys2 {0}
+      run: |
+        BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
+        cmake --build "$BUILD_ROOT" --target install --parallel
+
+    - name: Build LLVM (Windows MSVC)
+      if: steps.check-official.outputs.source == 'build' && runner.os == 'Windows' && inputs.msys2 == ''
+      shell: bash
+      run: cmake --build "$RUNNER_TEMP/llvm-build" --config Release --target install --parallel
+
+    - name: Build LLVM (Unix)
+      if: steps.check-official.outputs.source == 'build' && runner.os != 'Windows'
+      shell: bash
+      run: cmake --build "$RUNNER_TEMP/llvm-build" --target install --parallel
+
+    # ── Verify ───────────────────────────────────────────────────────
+    - name: Verify installation
+      shell: bash
+      run: |
+        PREFIX="$RUNNER_TEMP/llvm-install"
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          test -f "$PREFIX/bin/clang.exe" || { echo "clang.exe not found"; exit 1; }
+        else
+          test -x "$PREFIX/bin/llvm-config" || { echo "llvm-config not found"; exit 1; }
+        fi
+        test -f "$PREFIX/include/llvm-c/Types.h" || { echo "LLVM C API headers not found"; exit 1; }
+        echo "LLVM installation verified"
+
+    # ── Generate file list ───────────────────────────────────────────
+    - name: Generate file list
+      id: filelist
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        TARGET="${{ inputs.target }}"
+        PREFIX="$RUNNER_TEMP/llvm-install"
+        FILES_NAME="files-v${VERSION}-${TARGET}.txt"
+        find "$PREFIX" -type f -printf '%P\t%s\n' | sort > "$FILES_NAME" 2>/dev/null || \
+          find "$PREFIX" -type f | while read -r f; do
+            rel="${f#$PREFIX/}"
+            size=$(stat -f%z "$f" 2>/dev/null || stat -c%s "$f" 2>/dev/null || echo 0)
+            printf '%s\t%s\n' "$rel" "$size"
+          done | sort > "$FILES_NAME"
+        echo "files_name=${FILES_NAME}" >> "$GITHUB_OUTPUT"
+
+    # ── Create archive ───────────────────────────────────────────────
+    - name: Create archive (tar.xz)
+      id: package-tar
+      if: inputs.archive_ext == 'tar.xz'
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        TARGET="${{ inputs.target }}"
+        ARCHIVE_NAME="llvm-${VERSION}-${TARGET}.tar.xz"
+        tar cJf "$ARCHIVE_NAME" -C "$RUNNER_TEMP/llvm-install" .
+        echo "archive_name=${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
+
+    - name: Create archive (zip)
+      id: package-zip
+      if: inputs.archive_ext == 'zip'
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        TARGET="${{ inputs.target }}"
+        ARCHIVE_NAME="llvm-${VERSION}-${TARGET}.zip"
+        cd "$RUNNER_TEMP/llvm-install"
+        7z a "$GITHUB_WORKSPACE/${ARCHIVE_NAME}" .
+        echo "archive_name=${ARCHIVE_NAME}" >> "$GITHUB_OUTPUT"
+
+    - name: Set archive name output
+      id: package
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        TARGET="${{ inputs.target }}"
+        EXT="${{ inputs.archive_ext }}"
+        echo "archive_name=llvm-${VERSION}-${TARGET}.${EXT}" >> "$GITHUB_OUTPUT"
