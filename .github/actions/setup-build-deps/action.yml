@@ -22,8 +22,8 @@ runs:
       shell: sh
       run: apk add --no-cache cmake ninja gcc g++ musl-dev linux-headers python3 git bash
 
-    - name: Install build dependencies (i386 Ubuntu container)
-      if: inputs.container == 'i386/ubuntu:24.04'
+    - name: Install build dependencies (i386 Debian container)
+      if: startsWith(inputs.container, 'i386/debian')
       shell: bash
       run: |
         apt-get update -qq

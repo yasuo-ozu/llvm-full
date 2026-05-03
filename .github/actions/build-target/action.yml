@@ -15,11 +15,11 @@ runs:
       shell: bash
       run: |
         # Detect target from calling workflow filename
-        # GITHUB_WORKFLOW_REF = "owner/repo/.github/workflows/build-linux-x86_64.yml@refs/heads/b18.1.8"
-        WORKFLOW_PATH="${GITHUB_WORKFLOW_REF%%@*}"   # strip @refs/... first
-        WORKFLOW_FILE="${WORKFLOW_PATH##*/}"          # then extract filename
-        TARGET="${WORKFLOW_FILE#build-}"
-        TARGET="${TARGET%.yml}"
+        # GITHUB_WORKFLOW_REF = "owner/repo/.github/workflows/ubuntu-latest--linux-x86_64.yml@refs/..."
+        WORKFLOW_FILE="${GITHUB_WORKFLOW_REF%%@*}"
+        WORKFLOW_FILE="${WORKFLOW_FILE##*/}"
+        WORKFLOW_FILE="${WORKFLOW_FILE%.yml}"
+        TARGET="${WORKFLOW_FILE#*--}"
 
         # Parse version from branch name
         VERSION="${GITHUB_REF_NAME#b}"
@@ -35,7 +35,7 @@ runs:
           linux-aarch64)        LLVM_TARGETS="AArch64";     EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
           linux-x86_64-musl)    LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="alpine:3.21" ;;
           linux-aarch64-musl)   LLVM_TARGETS="AArch64";     EXT="tar.xz"; MSYS2="";       CONTAINER="alpine:3.21" ;;
-          linux-i686)           LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="i386/ubuntu:24.04" ;;
+          linux-i686)           LLVM_TARGETS="X86";         EXT="tar.xz"; MSYS2="";       CONTAINER="i386/debian:bookworm" ;;
           macos-aarch64)        LLVM_TARGETS="X86;AArch64"; EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
           macos-x86_64)         LLVM_TARGETS="X86;AArch64"; EXT="tar.xz"; MSYS2="";       CONTAINER="" ;;
           windows-msvc)         LLVM_TARGETS="X86";         EXT="zip";    MSYS2="";       CONTAINER="" ;;

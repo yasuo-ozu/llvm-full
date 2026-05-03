@@ -302,19 +302,19 @@ LLVM is distributed under the [Apache License 2.0 with LLVM Exceptions](https://
 
 [dl]: https://img.shields.io/badge/download-blue
 
-[b-22.1.0]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b22.1.0
-[b-21.1.4]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b21.1.4
-[b-20.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b20.1.8
-[b-19.1.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b19.1.7
-[b-18.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b18.1.8
-[b-17.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b17.0.6
-[b-16.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b16.0.6
-[b-15.0.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b15.0.7
-[b-14.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b14.0.6
-[b-13.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b13.0.1
-[b-12.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b12.0.1
-[b-11.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b11.0.1
-[b-10.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/build-linux-x86_64.yml/badge.svg?branch=b10.0.1
+[b-22.1.0]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b22.1.0
+[b-21.1.4]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b21.1.4
+[b-20.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b20.1.8
+[b-19.1.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b19.1.7
+[b-18.1.8]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b18.1.8
+[b-17.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b17.0.6
+[b-16.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b16.0.6
+[b-15.0.7]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b15.0.7
+[b-14.0.6]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b14.0.6
+[b-13.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b13.0.1
+[b-12.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b12.0.1
+[b-11.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b11.0.1
+[b-10.0.1]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/ubuntu-latest--linux-x86_64.yml/badge.svg?branch=b10.0.1
 [w-22.1.0]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab22.1.0
 [w-21.1.4]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab21.1.4
 [w-20.1.8]: https://github.com/yasuo-ozu/llvm-full/actions?query=branch%3Ab20.1.8
