@@ -417,6 +417,15 @@ runs:
           INSTALL_DIR="/usr/lib/llvm-${LLVM_MAJOR}"
         fi
 
+        # For brew-installed LLVM on macOS, override to the brew prefix
+        if [ "${{ steps.download.outputs.prebuilt }}" != "true" ] && \
+           [ "${{ runner.os }}" = "macOS" ]; then
+          BREW_PREFIX="$(brew --prefix "llvm@${LLVM_MAJOR}" 2>/dev/null || true)"
+          if [ -n "$BREW_PREFIX" ] && [ -x "$BREW_PREFIX/bin/llvm-config" ]; then
+            INSTALL_DIR="$BREW_PREFIX"
+          fi
+        fi
+
         echo "version=${{ steps.parse.outputs.version }}" >> "$GITHUB_OUTPUT"
         echo "prefix=${INSTALL_DIR}" >> "$GITHUB_OUTPUT"
 
