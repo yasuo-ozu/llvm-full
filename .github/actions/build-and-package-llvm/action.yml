@@ -243,6 +243,7 @@ runs:
           "${cmake_args[@]}" \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+          -DCMAKE_CXX_FLAGS="-include cstdint" \
           -DLLVM_ENABLE_PROJECTS="clang;lld" \
           -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
           -DLLVM_ENABLE_LIBXML2=OFF \
@@ -265,6 +266,7 @@ runs:
           "${cmake_args[@]}" \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+          -DCMAKE_CXX_FLAGS="-include cstdint" \
           -DLLVM_ENABLE_PROJECTS="clang;lld" \
           -DLLVM_TARGETS_TO_BUILD="${{ inputs.llvm_targets }}" \
           -DLLVM_ENABLE_LIBXML2=OFF \

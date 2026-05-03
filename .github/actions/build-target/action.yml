@@ -10,14 +10,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install bash (Alpine container)
-      if: runner.os == 'Linux'
-      shell: sh
-      run: |
-        if command -v apk > /dev/null 2>&1 && ! command -v bash > /dev/null 2>&1; then
-          apk add --no-cache bash
-        fi
-
     - name: Detect target and config
       id: config
       shell: bash
@@ -60,9 +52,9 @@ runs:
         echo "container=${CONTAINER}" >> "$GITHUB_OUTPUT"
         echo "Detected target=$TARGET version=$VERSION llvm_targets=$LLVM_TARGETS ext=$EXT msys2=$MSYS2"
 
-    - name: Build in Docker (Alpine on ARM64)
+    - name: Build in Docker container
       id: docker-build
-      if: steps.config.outputs.container != '' && runner.arch == 'ARM64' && startsWith(steps.config.outputs.container, 'alpine')
+      if: steps.config.outputs.container != ''
       shell: bash
       run: |
         CONTAINER="${{ steps.config.outputs.container }}"
@@ -73,7 +65,14 @@ runs:
         cat > "$RUNNER_TEMP/docker-build.sh" << 'BUILDSCRIPT'
         #!/bin/sh
         set -eu
-        apk add --no-cache cmake ninja gcc g++ musl-dev linux-headers python3 git bash
+
+        # Install dependencies based on distro
+        if command -v apk > /dev/null 2>&1; then
+          apk add --no-cache cmake ninja gcc g++ musl-dev linux-headers python3 git bash
+        elif command -v apt-get > /dev/null 2>&1; then
+          apt-get update -qq
+          apt-get install -qq -y cmake ninja-build gcc g++ python3 git
+        fi
 
         git clone --depth 1 --branch "llvmorg-${VERSION}" \
           https://github.com/llvm/llvm-project /tmp/llvm-project
