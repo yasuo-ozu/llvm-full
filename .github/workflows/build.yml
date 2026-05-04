@@ -108,6 +108,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           MAJOR="${{ steps.version.outputs.major }}"
+          TARGET="${{ matrix.target }}"
           LLVM_TARGETS="${{ matrix.llvm_targets }}"
           CONTAINER="${{ matrix.container }}"
 
@@ -126,13 +127,32 @@ jobs:
           git clone --depth 1 --branch "llvmorg-${VERSION}" \
             https://github.com/llvm/llvm-project /tmp/llvm-project
 
+          # Older LLVM on musl can miss uintptr_t include in Signals.h.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 13 ]; then
+            sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/Support/Signals.h
+          fi
+
           cmake_args=""
           if [ "${MAJOR}" -le 11 ]; then
             cmake_args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
           fi
+          cmake_extra_args=""
+          extra_flags=""
+          # LLVM <= 17 can fail with GCC/Alpine aarch64 due to predefined
+          # ARM SME attribute macros colliding with TokenKinds keyword macros.
+          if [ "${TARGET}" = "linux-aarch64-musl" ] && [ "${MAJOR}" -le 17 ]; then
+            extra_flags="-U__arm_streaming -U__arm_streaming_compatible -U__arm_locally_streaming -U__arm_in -U__arm_out -U__arm_inout -U__arm_preserves -U__arm_agnostic"
+          fi
+          # LLVM 11 on modern i686 toolchains can fail in bundled benchmark headers.
+          if [ "${TARGET}" = "linux-i686" ] && [ "${MAJOR}" -le 11 ]; then
+            cmake_extra_args="-DLLVM_INCLUDE_BENCHMARKS=OFF"
+          fi
 
           cmake -S /tmp/llvm-project/llvm -B /tmp/llvm-build -G Ninja \
             $cmake_args \
+            $cmake_extra_args \
+            -DCMAKE_C_FLAGS="$extra_flags" \
+            -DCMAKE_CXX_FLAGS="$extra_flags" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/runner-temp/llvm-install \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
@@ -146,6 +166,7 @@ jobs:
             -v "$RUNNER_TEMP:/runner-temp" \
             -e VERSION="$VERSION" \
             -e MAJOR="$MAJOR" \
+            -e TARGET="$TARGET" \
             -e LLVM_TARGETS="$LLVM_TARGETS" \
             "$CONTAINER" \
             sh /runner-temp/docker-build.sh
@@ -345,8 +366,14 @@ jobs:
           matrix.target == 'windows-aarch64-msvc'
         shell: bash
         run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          toolset_args=()
+          if [ "$MAJOR" -le 11 ]; then
+            toolset_args=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+          fi
           cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
             -G "Visual Studio 17 2022" -A ARM64 \
+            "${toolset_args[@]}" \
             -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
@@ -538,13 +565,18 @@ jobs:
       - name: Commit file lists
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="${GITHUB_REF_NAME}"
           find artifacts -name 'files-*.txt' -exec cp {} . \;
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add files-*.txt
-          git diff --cached --quiet && echo "No changes to commit" || \
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
             git commit -m "Add file lists for v${VERSION}"
-          git push
+            git pull --rebase origin "${BRANCH}"
+            git push origin "HEAD:${BRANCH}"
+          fi
 
       - name: Force update version tag
         run: |
