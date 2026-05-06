@@ -131,6 +131,10 @@ jobs:
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 13 ]; then
             sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/Support/Signals.h
           fi
+          # Older LLVM on musl can call glibc-specific lseek64.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 15 ]; then
+            sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
+          fi
 
           cmake_args=""
           if [ "${MAJOR}" -le 11 ]; then
@@ -460,7 +464,11 @@ jobs:
         shell: msys2 {0}
         run: |
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
-          cmake --build "$BUILD_ROOT" --target install --parallel
+          if [ "${{ matrix.target }}" = "windows-i686-gnu" ]; then
+            cmake --build "$BUILD_ROOT" --target install --parallel 1
+          else
+            cmake --build "$BUILD_ROOT" --target install --parallel
+          fi
 
       - name: Build LLVM (Windows MSVC)
         if: >-
