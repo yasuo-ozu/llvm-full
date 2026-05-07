@@ -330,6 +330,17 @@ jobs:
           git clone --depth 1 --branch "llvmorg-${{ steps.version.outputs.version }}" \
             https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project"
 
+      - name: Patch LLVM source (Windows ARM64 LLVM10)
+        if: >-
+          steps.docker-build.outputs.done != 'true' &&
+          steps.check-official.outputs.source == 'build' &&
+          matrix.target == 'windows-aarch64-msvc' &&
+          steps.version.outputs.major == '10'
+        shell: bash
+        run: |
+          perl -0777 -i -pe 's/static_assert\((?:(?!;\n).)*inconsistent behavior between llvm:: and std:: implementation of is_trivially_copyable(?:(?!;\n).)*;\n//gs' \
+            "$RUNNER_TEMP/llvm-project/llvm/include/llvm/Support/type_traits.h"
+
       # ── Configure ──────────────────────────────────────────────────
       - name: Configure LLVM (Unix)
         if: >-
