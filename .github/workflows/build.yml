@@ -131,6 +131,10 @@ jobs:
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 13 ]; then
             sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/Support/Signals.h
           fi
+          # Older LLVM on musl can miss int64_t include in DIPrinter.h.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 12 ]; then
+            sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/DebugInfo/Symbolize/DIPrinter.h
+          fi
           # Older LLVM on musl can call glibc-specific lseek64.
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 15 ]; then
             sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
@@ -449,6 +453,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
+            -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
