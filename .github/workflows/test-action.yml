@@ -1,13 +1,13 @@
-name: Test Rust Crate
+name: Test Action
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   test:
+    name: ${{ matrix.version }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,7 +39,6 @@ jobs:
           - windows-i686-msvc
           - windows-i686-gnu
         include:
-          # Runner per target
           - target: linux-x86_64
             runner: ubuntu-latest
           - target: linux-aarch64
@@ -64,40 +63,9 @@ jobs:
             runner: windows-latest
           - target: windows-i686-gnu
             runner: windows-latest
-          # Rust feature per version
-          - version: "10.0.1"
-            feature: llvm10-0
-          - version: "11.0.1"
-            feature: llvm11-0
-          - version: "12.0.1"
-            feature: llvm12-0
-          - version: "13.0.1"
-            feature: llvm13-0
-          - version: "14.0.6"
-            feature: llvm14-0
-          - version: "15.0.7"
-            feature: llvm15-0
-          - version: "16.0.6"
-            feature: llvm16-0
-          - version: "17.0.6"
-            feature: llvm17-0
-          - version: "18.1.8"
-            feature: llvm18-1
-          - version: "19.1.7"
-            feature: llvm19-1
-          - version: "20.1.8"
-            feature: llvm20-1
-          - version: "21.1.4"
-            feature: llvm21-1
-          - version: "22.1.0"
-            feature: llvm22-1
-
-    runs-on: ${{ matrix.runner }}
-    name: ${{ matrix.version }} / ${{ matrix.target }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       # ── Runtime dependencies for non-native targets ───────────────
       - name: Install musl runtime
@@ -121,7 +89,7 @@ jobs:
         shell: bash
         run: echo "C:\\msys64\\mingw32\\bin" >> "$GITHUB_PATH"
 
-      # ── Install LLVM ──────────────────────────────────────────────
+      # ── Install LLVM via the action ───────────────────────────────
       - name: Install LLVM
         id: llvm
         uses: ./
@@ -130,19 +98,66 @@ jobs:
           target: ${{ matrix.target }}
           fallback: "false"
 
-      # ── Rust crate tests ──────────────────────────────────────────
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Test llvm-full crate
+      # ── Verify llvm-config and all components ─────────────────────
+      - name: Verify llvm-config and components
         shell: bash
-        env:
-          LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
-        run: cargo test --features ${{ matrix.feature }}
+        run: |
+          CONFIG="${LLVM_CONFIG:-}"
+          if [ -z "$CONFIG" ]; then
+            if command -v llvm-config >/dev/null 2>&1; then
+              CONFIG="llvm-config"
+            elif command -v llvm-config.exe >/dev/null 2>&1; then
+              CONFIG="llvm-config.exe"
+            else
+              echo "::error::llvm-config not found"
+              exit 1
+            fi
+          fi
 
-      - name: Test llvm-sys integration
-        if: matrix.version == '18.1.8'
-        shell: bash
-        env:
-          LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
-        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml
+          echo "llvm-config: $CONFIG"
+
+          # Check version
+          version=$("$CONFIG" --version)
+          echo "LLVM version: $version"
+
+          # List all components
+          components=$("$CONFIG" --components)
+          echo "Components: $components"
+          count=$(echo "$components" | wc -w)
+          echo "Component count: $count"
+
+          if [ "$count" -lt 5 ]; then
+            echo "::error::Too few components ($count)"
+            exit 1
+          fi
+
+          # Verify core components exist
+          for comp in core support analysis; do
+            if ! echo " $components " | grep -q " $comp "; then
+              echo "::error::Missing core component: $comp"
+              exit 1
+            fi
+          done
+
+          # Verify library files exist for every component
+          missing=0
+          for comp in $components; do
+            files=$("$CONFIG" --libfiles "$comp" 2>/dev/null) || continue
+            for f in $files; do
+              check="$f"
+              if [ "$RUNNER_OS" = "Windows" ]; then
+                check="$(cygpath -u "$f" 2>/dev/null || echo "$f")"
+              fi
+              if [ ! -f "$check" ]; then
+                echo "::warning::Missing library for $comp: $f"
+                missing=$((missing + 1))
+              fi
+            done
+          done
+
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::$missing library file(s) missing"
+            exit 1
+          fi
+
+          echo "All $count components verified."

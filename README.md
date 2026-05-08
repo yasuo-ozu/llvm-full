@@ -4,21 +4,21 @@ Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platform
 
 ## Build Status
 
-| Version | Status |
-|--------:|--------|
-| 22.1.0 | [![Build][b-22.1.0]][w-22.1.0] |
-| 21.1.4 | [![Build][b-21.1.4]][w-21.1.4] |
-| 20.1.8 | [![Build][b-20.1.8]][w-20.1.8] |
-| 19.1.7 | [![Build][b-19.1.7]][w-19.1.7] |
-| 18.1.8 | [![Build][b-18.1.8]][w-18.1.8] |
-| 17.0.6 | [![Build][b-17.0.6]][w-17.0.6] |
-| 16.0.6 | [![Build][b-16.0.6]][w-16.0.6] |
-| 15.0.7 | [![Build][b-15.0.7]][w-15.0.7] |
-| 14.0.6 | [![Build][b-14.0.6]][w-14.0.6] |
-| 13.0.1 | [![Build][b-13.0.1]][w-13.0.1] |
-| 12.0.1 | [![Build][b-12.0.1]][w-12.0.1] |
-| 11.0.1 | [![Build][b-11.0.1]][w-11.0.1] |
-| 10.0.1 | [![Build][b-10.0.1]][w-10.0.1] |
+| Version | Status | Download |
+|--------:|--------|----------|
+| 22.1.0 | [![Build][b-22.1.0]][w-22.1.0] | [![][dl]][r-22.1.0] |
+| 21.1.4 | [![Build][b-21.1.4]][w-21.1.4] | [![][dl]][r-21.1.4] |
+| 20.1.8 | [![Build][b-20.1.8]][w-20.1.8] | [![][dl]][r-20.1.8] |
+| 19.1.7 | [![Build][b-19.1.7]][w-19.1.7] | [![][dl]][r-19.1.7] |
+| 18.1.8 | [![Build][b-18.1.8]][w-18.1.8] | [![][dl]][r-18.1.8] |
+| 17.0.6 | [![Build][b-17.0.6]][w-17.0.6] | [![][dl]][r-17.0.6] |
+| 16.0.6 | [![Build][b-16.0.6]][w-16.0.6] | [![][dl]][r-16.0.6] |
+| 15.0.7 | [![Build][b-15.0.7]][w-15.0.7] | [![][dl]][r-15.0.7] |
+| 14.0.6 | [![Build][b-14.0.6]][w-14.0.6] | [![][dl]][r-14.0.6] |
+| 13.0.1 | [![Build][b-13.0.1]][w-13.0.1] | [![][dl]][r-13.0.1] |
+| 12.0.1 | [![Build][b-12.0.1]][w-12.0.1] | [![][dl]][r-12.0.1] |
+| 11.0.1 | [![Build][b-11.0.1]][w-11.0.1] | [![][dl]][r-11.0.1] |
+| 10.0.1 | [![Build][b-10.0.1]][w-10.0.1] | [![][dl]][r-10.0.1] |
 
 ## Why llvm-full?
 
@@ -39,55 +39,55 @@ Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platform
 
 | Version | x86_64 | AArch64 | x86_64 (musl) | AArch64 (musl) | i686 |
 |---------:|------|------|------|------|------|
-| 22.1.0 | [![][dl]][r-22.1.0] [files][f-22.1.0-linux-x86_64] | [![][dl]][r-22.1.0] [files][f-22.1.0-linux-aarch64] | [![][dl]][r-22.1.0] [files][f-22.1.0-linux-x86_64-musl] | [![][dl]][r-22.1.0] [files][f-22.1.0-linux-aarch64-musl] | [![][dl]][r-22.1.0] [files][f-22.1.0-linux-i686] |
-| 21.1.4 | [![][dl]][r-21.1.4] [files][f-21.1.4-linux-x86_64] | [![][dl]][r-21.1.4] [files][f-21.1.4-linux-aarch64] | [![][dl]][r-21.1.4] [files][f-21.1.4-linux-x86_64-musl] | [![][dl]][r-21.1.4] [files][f-21.1.4-linux-aarch64-musl] | [![][dl]][r-21.1.4] [files][f-21.1.4-linux-i686] |
-| 20.1.8 | [![][dl]][r-20.1.8] [files][f-20.1.8-linux-x86_64] | [![][dl]][r-20.1.8] [files][f-20.1.8-linux-aarch64] | [![][dl]][r-20.1.8] [files][f-20.1.8-linux-x86_64-musl] | [![][dl]][r-20.1.8] [files][f-20.1.8-linux-aarch64-musl] | [![][dl]][r-20.1.8] [files][f-20.1.8-linux-i686] |
-| 19.1.7 | [![][dl]][r-19.1.7] [files][f-19.1.7-linux-x86_64] | [![][dl]][r-19.1.7] [files][f-19.1.7-linux-aarch64] | [![][dl]][r-19.1.7] [files][f-19.1.7-linux-x86_64-musl] | [![][dl]][r-19.1.7] [files][f-19.1.7-linux-aarch64-musl] | [![][dl]][r-19.1.7] [files][f-19.1.7-linux-i686] |
-| 18.1.8 | [![][dl]][r-18.1.8] [files][f-18.1.8-linux-x86_64] | [![][dl]][r-18.1.8] [files][f-18.1.8-linux-aarch64] | [![][dl]][r-18.1.8] [files][f-18.1.8-linux-x86_64-musl] | [![][dl]][r-18.1.8] [files][f-18.1.8-linux-aarch64-musl] | [![][dl]][r-18.1.8] [files][f-18.1.8-linux-i686] |
-| 17.0.6 | [![][dl]][r-17.0.6] [files][f-17.0.6-linux-x86_64] | [![][dl]][r-17.0.6] [files][f-17.0.6-linux-aarch64] | [![][dl]][r-17.0.6] [files][f-17.0.6-linux-x86_64-musl] | [![][dl]][r-17.0.6] [files][f-17.0.6-linux-aarch64-musl] | [![][dl]][r-17.0.6] [files][f-17.0.6-linux-i686] |
-| 16.0.6 | [![][dl]][r-16.0.6] [files][f-16.0.6-linux-x86_64] | [![][dl]][r-16.0.6] [files][f-16.0.6-linux-aarch64] | [![][dl]][r-16.0.6] [files][f-16.0.6-linux-x86_64-musl] | [![][dl]][r-16.0.6] [files][f-16.0.6-linux-aarch64-musl] | [![][dl]][r-16.0.6] [files][f-16.0.6-linux-i686] |
-| 15.0.7 | [![][dl]][r-15.0.7] [files][f-15.0.7-linux-x86_64] | [![][dl]][r-15.0.7] [files][f-15.0.7-linux-aarch64] | [![][dl]][r-15.0.7] [files][f-15.0.7-linux-x86_64-musl] | [![][dl]][r-15.0.7] [files][f-15.0.7-linux-aarch64-musl] | [![][dl]][r-15.0.7] [files][f-15.0.7-linux-i686] |
-| 14.0.6 | [![][dl]][r-14.0.6] [files][f-14.0.6-linux-x86_64] | [![][dl]][r-14.0.6] [files][f-14.0.6-linux-aarch64] | [![][dl]][r-14.0.6] [files][f-14.0.6-linux-x86_64-musl] | [![][dl]][r-14.0.6] [files][f-14.0.6-linux-aarch64-musl] | [![][dl]][r-14.0.6] [files][f-14.0.6-linux-i686] |
-| 13.0.1 | [![][dl]][r-13.0.1] [files][f-13.0.1-linux-x86_64] | [![][dl]][r-13.0.1] [files][f-13.0.1-linux-aarch64] | [![][dl]][r-13.0.1] [files][f-13.0.1-linux-x86_64-musl] | [![][dl]][r-13.0.1] [files][f-13.0.1-linux-aarch64-musl] | [![][dl]][r-13.0.1] [files][f-13.0.1-linux-i686] |
-| 12.0.1 | [![][dl]][r-12.0.1] [files][f-12.0.1-linux-x86_64] | [![][dl]][r-12.0.1] [files][f-12.0.1-linux-aarch64] | [![][dl]][r-12.0.1] [files][f-12.0.1-linux-x86_64-musl] | [![][dl]][r-12.0.1] [files][f-12.0.1-linux-aarch64-musl] | [![][dl]][r-12.0.1] [files][f-12.0.1-linux-i686] |
-| 11.0.1 | [![][dl]][r-11.0.1] [files][f-11.0.1-linux-x86_64] | [![][dl]][r-11.0.1] [files][f-11.0.1-linux-aarch64] | [![][dl]][r-11.0.1] [files][f-11.0.1-linux-x86_64-musl] | [![][dl]][r-11.0.1] [files][f-11.0.1-linux-aarch64-musl] | [![][dl]][r-11.0.1] [files][f-11.0.1-linux-i686] |
-| 10.0.1 | [![][dl]][r-10.0.1] [files][f-10.0.1-linux-x86_64] | [![][dl]][r-10.0.1] [files][f-10.0.1-linux-aarch64] | [![][dl]][r-10.0.1] [files][f-10.0.1-linux-x86_64-musl] | [![][dl]][r-10.0.1] [files][f-10.0.1-linux-aarch64-musl] | [![][dl]][r-10.0.1] [files][f-10.0.1-linux-i686] |
+| [22.1.0][r-22.1.0] | [files][f-22.1.0-linux-x86_64] | [files][f-22.1.0-linux-aarch64] | [files][f-22.1.0-linux-x86_64-musl] | [files][f-22.1.0-linux-aarch64-musl] | [files][f-22.1.0-linux-i686] |
+| [21.1.4][r-21.1.4] | [files][f-21.1.4-linux-x86_64] | [files][f-21.1.4-linux-aarch64] | [files][f-21.1.4-linux-x86_64-musl] | [files][f-21.1.4-linux-aarch64-musl] | [files][f-21.1.4-linux-i686] |
+| [20.1.8][r-20.1.8] | [files][f-20.1.8-linux-x86_64] | [files][f-20.1.8-linux-aarch64] | [files][f-20.1.8-linux-x86_64-musl] | [files][f-20.1.8-linux-aarch64-musl] | [files][f-20.1.8-linux-i686] |
+| [19.1.7][r-19.1.7] | [files][f-19.1.7-linux-x86_64] | [files][f-19.1.7-linux-aarch64] | [files][f-19.1.7-linux-x86_64-musl] | [files][f-19.1.7-linux-aarch64-musl] | [files][f-19.1.7-linux-i686] |
+| [18.1.8][r-18.1.8] | [files][f-18.1.8-linux-x86_64] | [files][f-18.1.8-linux-aarch64] | [files][f-18.1.8-linux-x86_64-musl] | [files][f-18.1.8-linux-aarch64-musl] | [files][f-18.1.8-linux-i686] |
+| [17.0.6][r-17.0.6] | [files][f-17.0.6-linux-x86_64] | [files][f-17.0.6-linux-aarch64] | [files][f-17.0.6-linux-x86_64-musl] | [files][f-17.0.6-linux-aarch64-musl] | [files][f-17.0.6-linux-i686] |
+| [16.0.6][r-16.0.6] | [files][f-16.0.6-linux-x86_64] | [files][f-16.0.6-linux-aarch64] | [files][f-16.0.6-linux-x86_64-musl] | [files][f-16.0.6-linux-aarch64-musl] | [files][f-16.0.6-linux-i686] |
+| [15.0.7][r-15.0.7] | [files][f-15.0.7-linux-x86_64] | [files][f-15.0.7-linux-aarch64] | [files][f-15.0.7-linux-x86_64-musl] | [files][f-15.0.7-linux-aarch64-musl] | [files][f-15.0.7-linux-i686] |
+| [14.0.6][r-14.0.6] | [files][f-14.0.6-linux-x86_64] | [files][f-14.0.6-linux-aarch64] | [files][f-14.0.6-linux-x86_64-musl] | [files][f-14.0.6-linux-aarch64-musl] | [files][f-14.0.6-linux-i686] |
+| [13.0.1][r-13.0.1] | [files][f-13.0.1-linux-x86_64] | [files][f-13.0.1-linux-aarch64] | [files][f-13.0.1-linux-x86_64-musl] | [files][f-13.0.1-linux-aarch64-musl] | [files][f-13.0.1-linux-i686] |
+| [12.0.1][r-12.0.1] | [files][f-12.0.1-linux-x86_64] | [files][f-12.0.1-linux-aarch64] | [files][f-12.0.1-linux-x86_64-musl] | [files][f-12.0.1-linux-aarch64-musl] | [files][f-12.0.1-linux-i686] |
+| [11.0.1][r-11.0.1] | [files][f-11.0.1-linux-x86_64] | [files][f-11.0.1-linux-aarch64] | [files][f-11.0.1-linux-x86_64-musl] | [files][f-11.0.1-linux-aarch64-musl] | [files][f-11.0.1-linux-i686] |
+| [10.0.1][r-10.0.1] | [files][f-10.0.1-linux-x86_64] | [files][f-10.0.1-linux-aarch64] | [files][f-10.0.1-linux-x86_64-musl] | [files][f-10.0.1-linux-aarch64-musl] | [files][f-10.0.1-linux-i686] |
 
 ### macOS
 
 | Version | ARM64 | x86_64 |
 |---------:|------|------|
-| 22.1.0 | [![][dl]][r-22.1.0] [files][f-22.1.0-macos-aarch64] | [![][dl]][r-22.1.0] [files][f-22.1.0-macos-x86_64] |
-| 21.1.4 | [![][dl]][r-21.1.4] [files][f-21.1.4-macos-aarch64] | [![][dl]][r-21.1.4] [files][f-21.1.4-macos-x86_64] |
-| 20.1.8 | [![][dl]][r-20.1.8] [files][f-20.1.8-macos-aarch64] | [![][dl]][r-20.1.8] [files][f-20.1.8-macos-x86_64] |
-| 19.1.7 | [![][dl]][r-19.1.7] [files][f-19.1.7-macos-aarch64] | [![][dl]][r-19.1.7] [files][f-19.1.7-macos-x86_64] |
-| 18.1.8 | [![][dl]][r-18.1.8] [files][f-18.1.8-macos-aarch64] | [![][dl]][r-18.1.8] [files][f-18.1.8-macos-x86_64] |
-| 17.0.6 | [![][dl]][r-17.0.6] [files][f-17.0.6-macos-aarch64] | [![][dl]][r-17.0.6] [files][f-17.0.6-macos-x86_64] |
-| 16.0.6 | [![][dl]][r-16.0.6] [files][f-16.0.6-macos-aarch64] | [![][dl]][r-16.0.6] [files][f-16.0.6-macos-x86_64] |
-| 15.0.7 | [![][dl]][r-15.0.7] [files][f-15.0.7-macos-aarch64] | [![][dl]][r-15.0.7] [files][f-15.0.7-macos-x86_64] |
-| 14.0.6 | [![][dl]][r-14.0.6] [files][f-14.0.6-macos-aarch64] | [![][dl]][r-14.0.6] [files][f-14.0.6-macos-x86_64] |
-| 13.0.1 | [![][dl]][r-13.0.1] [files][f-13.0.1-macos-aarch64] | [![][dl]][r-13.0.1] [files][f-13.0.1-macos-x86_64] |
-| 12.0.1 | [![][dl]][r-12.0.1] [files][f-12.0.1-macos-aarch64] | [![][dl]][r-12.0.1] [files][f-12.0.1-macos-x86_64] |
-| 11.0.1 | [![][dl]][r-11.0.1] [files][f-11.0.1-macos-aarch64] | [![][dl]][r-11.0.1] [files][f-11.0.1-macos-x86_64] |
-| 10.0.1 | [![][dl]][r-10.0.1] [files][f-10.0.1-macos-aarch64] | [![][dl]][r-10.0.1] [files][f-10.0.1-macos-x86_64] |
+| [22.1.0][r-22.1.0] | [files][f-22.1.0-macos-aarch64] | [files][f-22.1.0-macos-x86_64] |
+| [21.1.4][r-21.1.4] | [files][f-21.1.4-macos-aarch64] | [files][f-21.1.4-macos-x86_64] |
+| [20.1.8][r-20.1.8] | [files][f-20.1.8-macos-aarch64] | [files][f-20.1.8-macos-x86_64] |
+| [19.1.7][r-19.1.7] | [files][f-19.1.7-macos-aarch64] | [files][f-19.1.7-macos-x86_64] |
+| [18.1.8][r-18.1.8] | [files][f-18.1.8-macos-aarch64] | [files][f-18.1.8-macos-x86_64] |
+| [17.0.6][r-17.0.6] | [files][f-17.0.6-macos-aarch64] | [files][f-17.0.6-macos-x86_64] |
+| [16.0.6][r-16.0.6] | [files][f-16.0.6-macos-aarch64] | [files][f-16.0.6-macos-x86_64] |
+| [15.0.7][r-15.0.7] | [files][f-15.0.7-macos-aarch64] | [files][f-15.0.7-macos-x86_64] |
+| [14.0.6][r-14.0.6] | [files][f-14.0.6-macos-aarch64] | [files][f-14.0.6-macos-x86_64] |
+| [13.0.1][r-13.0.1] | [files][f-13.0.1-macos-aarch64] | [files][f-13.0.1-macos-x86_64] |
+| [12.0.1][r-12.0.1] | [files][f-12.0.1-macos-aarch64] | [files][f-12.0.1-macos-x86_64] |
+| [11.0.1][r-11.0.1] | [files][f-11.0.1-macos-aarch64] | [files][f-11.0.1-macos-x86_64] |
+| [10.0.1][r-10.0.1] | [files][f-10.0.1-macos-aarch64] | [files][f-10.0.1-macos-x86_64] |
 
 ### Windows
 
 | Version | x64 MSVC | x64 GNU | ARM64 MSVC | i686 MSVC | i686 GNU |
 |---------:|------|------|------|------|------|
-| 22.1.0 | [![][dl]][r-22.1.0] [files][f-22.1.0-windows-msvc] | [![][dl]][r-22.1.0] [files][f-22.1.0-windows-gnu] | [![][dl]][r-22.1.0] [files][f-22.1.0-windows-aarch64-msvc] | [![][dl]][r-22.1.0] [files][f-22.1.0-windows-i686-msvc] | [![][dl]][r-22.1.0] [files][f-22.1.0-windows-i686-gnu] |
-| 21.1.4 | [![][dl]][r-21.1.4] [files][f-21.1.4-windows-msvc] | [![][dl]][r-21.1.4] [files][f-21.1.4-windows-gnu] | [![][dl]][r-21.1.4] [files][f-21.1.4-windows-aarch64-msvc] | [![][dl]][r-21.1.4] [files][f-21.1.4-windows-i686-msvc] | [![][dl]][r-21.1.4] [files][f-21.1.4-windows-i686-gnu] |
-| 20.1.8 | [![][dl]][r-20.1.8] [files][f-20.1.8-windows-msvc] | [![][dl]][r-20.1.8] [files][f-20.1.8-windows-gnu] | [![][dl]][r-20.1.8] [files][f-20.1.8-windows-aarch64-msvc] | [![][dl]][r-20.1.8] [files][f-20.1.8-windows-i686-msvc] | [![][dl]][r-20.1.8] [files][f-20.1.8-windows-i686-gnu] |
-| 19.1.7 | [![][dl]][r-19.1.7] [files][f-19.1.7-windows-msvc] | [![][dl]][r-19.1.7] [files][f-19.1.7-windows-gnu] | [![][dl]][r-19.1.7] [files][f-19.1.7-windows-aarch64-msvc] | [![][dl]][r-19.1.7] [files][f-19.1.7-windows-i686-msvc] | [![][dl]][r-19.1.7] [files][f-19.1.7-windows-i686-gnu] |
-| 18.1.8 | [![][dl]][r-18.1.8] [files][f-18.1.8-windows-msvc] | [![][dl]][r-18.1.8] [files][f-18.1.8-windows-gnu] | [![][dl]][r-18.1.8] [files][f-18.1.8-windows-aarch64-msvc] | [![][dl]][r-18.1.8] [files][f-18.1.8-windows-i686-msvc] | [![][dl]][r-18.1.8] [files][f-18.1.8-windows-i686-gnu] |
-| 17.0.6 | [![][dl]][r-17.0.6] [files][f-17.0.6-windows-msvc] | [![][dl]][r-17.0.6] [files][f-17.0.6-windows-gnu] | [![][dl]][r-17.0.6] [files][f-17.0.6-windows-aarch64-msvc] | [![][dl]][r-17.0.6] [files][f-17.0.6-windows-i686-msvc] | [![][dl]][r-17.0.6] [files][f-17.0.6-windows-i686-gnu] |
-| 16.0.6 | [![][dl]][r-16.0.6] [files][f-16.0.6-windows-msvc] | [![][dl]][r-16.0.6] [files][f-16.0.6-windows-gnu] | [![][dl]][r-16.0.6] [files][f-16.0.6-windows-aarch64-msvc] | [![][dl]][r-16.0.6] [files][f-16.0.6-windows-i686-msvc] | [![][dl]][r-16.0.6] [files][f-16.0.6-windows-i686-gnu] |
-| 15.0.7 | [![][dl]][r-15.0.7] [files][f-15.0.7-windows-msvc] | [![][dl]][r-15.0.7] [files][f-15.0.7-windows-gnu] | [![][dl]][r-15.0.7] [files][f-15.0.7-windows-aarch64-msvc] | [![][dl]][r-15.0.7] [files][f-15.0.7-windows-i686-msvc] | [![][dl]][r-15.0.7] [files][f-15.0.7-windows-i686-gnu] |
-| 14.0.6 | [![][dl]][r-14.0.6] [files][f-14.0.6-windows-msvc] | [![][dl]][r-14.0.6] [files][f-14.0.6-windows-gnu] | [![][dl]][r-14.0.6] [files][f-14.0.6-windows-aarch64-msvc] | [![][dl]][r-14.0.6] [files][f-14.0.6-windows-i686-msvc] | [![][dl]][r-14.0.6] [files][f-14.0.6-windows-i686-gnu] |
-| 13.0.1 | [![][dl]][r-13.0.1] [files][f-13.0.1-windows-msvc] | [![][dl]][r-13.0.1] [files][f-13.0.1-windows-gnu] | [![][dl]][r-13.0.1] [files][f-13.0.1-windows-aarch64-msvc] | [![][dl]][r-13.0.1] [files][f-13.0.1-windows-i686-msvc] | [![][dl]][r-13.0.1] [files][f-13.0.1-windows-i686-gnu] |
-| 12.0.1 | [![][dl]][r-12.0.1] [files][f-12.0.1-windows-msvc] | [![][dl]][r-12.0.1] [files][f-12.0.1-windows-gnu] | [![][dl]][r-12.0.1] [files][f-12.0.1-windows-aarch64-msvc] | [![][dl]][r-12.0.1] [files][f-12.0.1-windows-i686-msvc] | [![][dl]][r-12.0.1] [files][f-12.0.1-windows-i686-gnu] |
-| 11.0.1 | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-gnu] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-aarch64-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-i686-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-i686-gnu] |
-| 10.0.1 | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-gnu] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-aarch64-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-i686-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-i686-gnu] |
+| [22.1.0][r-22.1.0] | [files][f-22.1.0-windows-msvc] | [files][f-22.1.0-windows-gnu] | [files][f-22.1.0-windows-aarch64-msvc] | [files][f-22.1.0-windows-i686-msvc] | [files][f-22.1.0-windows-i686-gnu] |
+| [21.1.4][r-21.1.4] | [files][f-21.1.4-windows-msvc] | [files][f-21.1.4-windows-gnu] | [files][f-21.1.4-windows-aarch64-msvc] | [files][f-21.1.4-windows-i686-msvc] | [files][f-21.1.4-windows-i686-gnu] |
+| [20.1.8][r-20.1.8] | [files][f-20.1.8-windows-msvc] | [files][f-20.1.8-windows-gnu] | [files][f-20.1.8-windows-aarch64-msvc] | [files][f-20.1.8-windows-i686-msvc] | [files][f-20.1.8-windows-i686-gnu] |
+| [19.1.7][r-19.1.7] | [files][f-19.1.7-windows-msvc] | [files][f-19.1.7-windows-gnu] | [files][f-19.1.7-windows-aarch64-msvc] | [files][f-19.1.7-windows-i686-msvc] | [files][f-19.1.7-windows-i686-gnu] |
+| [18.1.8][r-18.1.8] | [files][f-18.1.8-windows-msvc] | [files][f-18.1.8-windows-gnu] | [files][f-18.1.8-windows-aarch64-msvc] | [files][f-18.1.8-windows-i686-msvc] | [files][f-18.1.8-windows-i686-gnu] |
+| [17.0.6][r-17.0.6] | [files][f-17.0.6-windows-msvc] | [files][f-17.0.6-windows-gnu] | [files][f-17.0.6-windows-aarch64-msvc] | [files][f-17.0.6-windows-i686-msvc] | [files][f-17.0.6-windows-i686-gnu] |
+| [16.0.6][r-16.0.6] | [files][f-16.0.6-windows-msvc] | [files][f-16.0.6-windows-gnu] | [files][f-16.0.6-windows-aarch64-msvc] | [files][f-16.0.6-windows-i686-msvc] | [files][f-16.0.6-windows-i686-gnu] |
+| [15.0.7][r-15.0.7] | [files][f-15.0.7-windows-msvc] | [files][f-15.0.7-windows-gnu] | [files][f-15.0.7-windows-aarch64-msvc] | [files][f-15.0.7-windows-i686-msvc] | [files][f-15.0.7-windows-i686-gnu] |
+| [14.0.6][r-14.0.6] | [files][f-14.0.6-windows-msvc] | [files][f-14.0.6-windows-gnu] | [files][f-14.0.6-windows-aarch64-msvc] | [files][f-14.0.6-windows-i686-msvc] | [files][f-14.0.6-windows-i686-gnu] |
+| [13.0.1][r-13.0.1] | [files][f-13.0.1-windows-msvc] | [files][f-13.0.1-windows-gnu] | [files][f-13.0.1-windows-aarch64-msvc] | [files][f-13.0.1-windows-i686-msvc] | [files][f-13.0.1-windows-i686-gnu] |
+| [12.0.1][r-12.0.1] | [files][f-12.0.1-windows-msvc] | [files][f-12.0.1-windows-gnu] | [files][f-12.0.1-windows-aarch64-msvc] | [files][f-12.0.1-windows-i686-msvc] | [files][f-12.0.1-windows-i686-gnu] |
+| [11.0.1][r-11.0.1] | [files][f-11.0.1-windows-msvc] | [files][f-11.0.1-windows-gnu] | [files][f-11.0.1-windows-aarch64-msvc] | [files][f-11.0.1-windows-i686-msvc] | [files][f-11.0.1-windows-i686-gnu] |
+| [10.0.1][r-10.0.1] | [files][f-10.0.1-windows-msvc] | [files][f-10.0.1-windows-gnu] | [files][f-10.0.1-windows-aarch64-msvc] | [files][f-10.0.1-windows-i686-msvc] | [files][f-10.0.1-windows-i686-gnu] |
 
 ## Usage
 
