@@ -466,7 +466,6 @@ jobs:
           cmake_args=()
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
-            cmake_args+=(-DLLVM_INCLUDE_BENCHMARKS=OFF)
           fi
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
@@ -474,10 +473,16 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
+            -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-keep-memory,--reduce-memory-overheads" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--no-keep-memory,--reduce-memory-overheads" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DLLVM_INCLUDE_DOCS=OFF \
+            -DLLVM_INCLUDE_BENCHMARKS=OFF \
             -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu"
 
       # ── Build ──────────────────────────────────────────────────────
