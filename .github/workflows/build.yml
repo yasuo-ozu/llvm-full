@@ -330,16 +330,19 @@ jobs:
           git clone --depth 1 --branch "llvmorg-${{ steps.version.outputs.version }}" \
             https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project"
 
-      - name: Patch LLVM source (Windows ARM64 LLVM10)
+      - name: Patch LLVM source (Windows MSVC LLVM10)
         if: >-
           steps.docker-build.outputs.done != 'true' &&
           steps.check-official.outputs.source == 'build' &&
-          matrix.target == 'windows-aarch64-msvc' &&
+          (matrix.target == 'windows-msvc' ||
+           matrix.target == 'windows-aarch64-msvc' ||
+           matrix.target == 'windows-i686-msvc') &&
           steps.version.outputs.major == '10'
         shell: bash
         run: |
-          perl -0777 -i -pe 's/static_assert\((?:(?!;\n).)*inconsistent behavior between llvm:: and std:: implementation of is_trivially_copyable(?:(?!;\n).)*;\n//gs' \
-            "$RUNNER_TEMP/llvm-project/llvm/include/llvm/Support/type_traits.h"
+          TYPE_TRAITS="$RUNNER_TEMP/llvm-project/llvm/include/llvm/Support/type_traits.h"
+          perl -0777 -i -pe 's@static_assert\([^;]*?inconsistent behavior between llvm:: and std:: implementation of is_trivially_copyable[^;]*?\);\R@@gs' \
+            "$TYPE_TRAITS"
 
       # ── Configure ──────────────────────────────────────────────────
       - name: Configure LLVM (Unix)
@@ -470,7 +473,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG" \
+            -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
