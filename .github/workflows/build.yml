@@ -207,6 +207,11 @@ jobs:
           install: git
           pacboy: toolchain:p cmake:p ninja:p
 
+      - name: Install 64-bit lld for i686 cross-linking
+        if: matrix.target == 'windows-i686-gnu'
+        shell: msys2 {0}
+        run: pacman -S --noconfirm mingw-w64-x86_64-lld
+
       # ── Check for official LLVM release archives ───────────────────
       - name: Check for official LLVM release archive
         id: check-official
@@ -459,6 +464,7 @@ jobs:
           matrix.target == 'windows-i686-gnu'
         shell: msys2 {0}
         run: |
+          export PATH="$PATH:/mingw64/bin"
           MAJOR="${{ steps.version.outputs.major }}"
           SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
@@ -473,8 +479,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
-            -DCMAKE_EXE_LINKER_FLAGS="-Wl,--no-keep-memory,--reduce-memory-overheads" \
-            -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--no-keep-memory,--reduce-memory-overheads" \
+            -DLLVM_USE_LINKER=lld \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
@@ -495,6 +500,7 @@ jobs:
         run: |
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           if [ "${{ matrix.target }}" = "windows-i686-gnu" ]; then
+            export PATH="$PATH:/mingw64/bin"
             cmake --build "$BUILD_ROOT" --target install --parallel 1
           else
             cmake --build "$BUILD_ROOT" --target install --parallel
