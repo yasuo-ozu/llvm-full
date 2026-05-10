@@ -465,6 +465,8 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH="$PATH:/mingw64/bin"
+          # Avoid inherited -O2 from MSYS2 env; it can trigger cc1plus OOM on i686.
+          unset CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
           MAJOR="${{ steps.version.outputs.major }}"
           SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
@@ -477,8 +479,9 @@ jobs:
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+            -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG -O0" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
+            -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG -O0" \
             -DLLVM_USE_LINKER=lld \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
