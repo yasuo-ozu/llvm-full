@@ -212,6 +212,14 @@ jobs:
         shell: msys2 {0}
         run: pacman -S --noconfirm mingw-w64-x86_64-lld
 
+      - name: Increase page file for LLVM 20 i686 build
+        if: matrix.target == 'windows-i686-gnu' && steps.version.outputs.major == '20'
+        uses: al-cheb/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 8GB
+          maximum-size: 16GB
+          disk-root: "C:"
+
       # ── Check for official LLVM release archives ───────────────────
       - name: Check for official LLVM release archive
         id: check-official
@@ -475,13 +483,22 @@ jobs:
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
           fi
+          c_release_flags="-DNDEBUG -O0"
+          cxx_release_flags="-DNDEBUG -O0"
+          if [ "$MAJOR" -eq 20 ]; then
+            # Additional OOM mitigations for LLVM 20
+            cmake_args+=(-DBUILD_SHARED_LIBS=ON)
+            cmake_args+=(-DLLVM_ENABLE_LTO=OFF)
+            c_release_flags="-DNDEBUG -O0 -fno-lto"
+            cxx_release_flags="-DNDEBUG -O0 -fno-lto"
+          fi
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
-            -DCMAKE_C_FLAGS_RELEASE="-DNDEBUG -O0" \
+            -DCMAKE_C_FLAGS_RELEASE="$c_release_flags" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
-            -DCMAKE_CXX_FLAGS_RELEASE="-DNDEBUG -O0" \
+            -DCMAKE_CXX_FLAGS_RELEASE="$cxx_release_flags" \
             -DLLVM_USE_LINKER=lld \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
