@@ -212,6 +212,11 @@ jobs:
         shell: msys2 {0}
         run: pacman -S --noconfirm mingw-w64-x86_64-lld
 
+      - name: Install 64-bit clang for i686 cross-compilation
+        if: matrix.target == 'windows-i686-gnu' && steps.version.outputs.major == '20'
+        shell: msys2 {0}
+        run: pacman -S --noconfirm mingw-w64-x86_64-clang
+
       - name: Increase page file for LLVM 20 i686 build
         if: matrix.target == 'windows-i686-gnu' && steps.version.outputs.major == '20'
         uses: al-cheb/configure-pagefile-action@v1.4
@@ -483,10 +488,17 @@ jobs:
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
           fi
+          c_flags=""
+          cxx_flags="-include cstdint"
           c_release_flags="-DNDEBUG -O0"
           cxx_release_flags="-DNDEBUG -O0"
           if [ "$MAJOR" -eq 20 ]; then
-            # Additional OOM mitigations for LLVM 20
+            # Cross-compile using 64-bit clang to avoid 32-bit cc1plus OOM
+            cross_flags="--target=i686-w64-windows-gnu --gcc-toolchain=/mingw32"
+            cmake_args+=(-DCMAKE_C_COMPILER=/mingw64/bin/clang.exe)
+            cmake_args+=(-DCMAKE_CXX_COMPILER=/mingw64/bin/clang++.exe)
+            c_flags="$cross_flags"
+            cxx_flags="$cross_flags -include cstdint"
             cmake_args+=(-DBUILD_SHARED_LIBS=ON)
             cmake_args+=(-DLLVM_ENABLE_LTO=OFF)
             c_release_flags="-DNDEBUG -O0 -fno-lto"
@@ -496,8 +508,9 @@ jobs:
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+            -DCMAKE_C_FLAGS="$c_flags" \
             -DCMAKE_C_FLAGS_RELEASE="$c_release_flags" \
-            -DCMAKE_CXX_FLAGS="-include cstdint" \
+            -DCMAKE_CXX_FLAGS="$cxx_flags" \
             -DCMAKE_CXX_FLAGS_RELEASE="$cxx_release_flags" \
             -DLLVM_USE_LINKER=lld \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
