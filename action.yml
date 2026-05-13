@@ -464,10 +464,15 @@ runs:
             echo "CPATH=${INSTALL_DIR}/include:${CPATH}" >> "$GITHUB_ENV"
             echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH}" >> "$GITHUB_ENV"
             echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          else
+            # Use DYLD_FALLBACK_LIBRARY_PATH (not DYLD_LIBRARY_PATH) on macOS.
+            # DYLD_LIBRARY_PATH overrides system libs, causing LLVM's bundled
+            # libc++abi.dylib to replace the system version and break frameworks.
+            # DYLD_FALLBACK_LIBRARY_PATH is searched AFTER default paths, so system
+            # libs load normally while LLVM-only libs (e.g. libunwind.1.dylib) are
+            # still found.
+            echo "DYLD_FALLBACK_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_FALLBACK_LIBRARY_PATH}" >> "$GITHUB_ENV"
           fi
-          # Note: DYLD_LIBRARY_PATH is intentionally NOT set on macOS.
-          # LLVM ships its own libc++abi.dylib which would override the system
-          # version and break macOS system frameworks that depend on newer symbols.
         fi
 
         # LLVM_SYS_*_PREFIX for Rust llvm-sys crate

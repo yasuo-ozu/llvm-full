@@ -168,6 +168,13 @@ fn emit_metadata(llvm_dir: &Path) {
     println!("cargo:include={llvm_dir_str}/include");
     println!("cargo:rustc-env=LLVM_FULL_PREFIX={llvm_dir_str}");
 
+    // On macOS, add RPATH so the runtime linker can find LLVM shared libraries
+    // (e.g. libunwind.1.dylib) that get pulled in via the link search path.
+    // Without this, @rpath references in those dylibs can't be resolved.
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{llvm_dir_str}/lib");
+    }
+
     // Parse version from directory name or llvm-config if available
     if let Some(name) = llvm_dir.file_name().and_then(|n| n.to_str()) {
         if let Some(version) = name.strip_prefix("llvm-") {

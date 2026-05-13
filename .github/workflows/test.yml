@@ -141,7 +141,7 @@ jobs:
         run: cargo test --features ${{ matrix.feature }}
 
       - name: Test llvm-sys integration
-        if: matrix.version == '18.1.8'
+        if: matrix.version == '18.1.8' && env.LLVM_CONFIG != ''
         shell: bash
         env:
           LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
