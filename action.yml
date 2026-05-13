@@ -43,11 +43,7 @@ runs:
         VERSION="${{ inputs.version }}"
         MAJOR="${VERSION%%.*}"
         MINOR="$(echo "$VERSION" | cut -d. -f2)"
-        if [ "$MAJOR" -le 18 ]; then
-          LLVM_SYS_KEY="${MAJOR}0"
-        else
-          LLVM_SYS_KEY="${MAJOR}${MINOR}"
-        fi
+        LLVM_SYS_KEY="${MAJOR}${MINOR}"
         echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
         echo "major=${MAJOR}" >> "$GITHUB_OUTPUT"
         echo "minor=${MINOR}" >> "$GITHUB_OUTPUT"
@@ -468,9 +464,10 @@ runs:
             echo "CPATH=${INSTALL_DIR}/include:${CPATH}" >> "$GITHUB_ENV"
             echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH}" >> "$GITHUB_ENV"
             echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
-          else
-            echo "DYLD_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_LIBRARY_PATH}" >> "$GITHUB_ENV"
           fi
+          # Note: DYLD_LIBRARY_PATH is intentionally NOT set on macOS.
+          # LLVM ships its own libc++abi.dylib which would override the system
+          # version and break macOS system frameworks that depend on newer symbols.
         fi
 
         # LLVM_SYS_*_PREFIX for Rust llvm-sys crate

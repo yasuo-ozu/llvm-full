@@ -493,8 +493,11 @@ jobs:
           c_release_flags="-DNDEBUG -O0"
           cxx_release_flags="-DNDEBUG -O0"
           if [ "$MAJOR" -eq 20 ]; then
-            # Cross-compile using 64-bit clang to avoid 32-bit cc1plus OOM
-            cross_flags="--target=i686-w64-windows-gnu --gcc-toolchain=/mingw32"
+            # Cross-compile using 64-bit clang to avoid 32-bit cc1plus OOM.
+            # clang.exe is a native Windows binary, so paths must be Windows-native
+            # (not MSYS2 paths like /mingw32 which it can't resolve).
+            mingw32_native="$(cygpath -m /mingw32)"
+            cross_flags="--target=i686-w64-windows-gnu --sysroot=${mingw32_native} --gcc-toolchain=${mingw32_native}"
             cmake_args+=(-DCMAKE_C_COMPILER=/mingw64/bin/clang.exe)
             cmake_args+=(-DCMAKE_CXX_COMPILER=/mingw64/bin/clang++.exe)
             c_flags="$cross_flags"
