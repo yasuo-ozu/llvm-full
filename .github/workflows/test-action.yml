@@ -146,16 +146,28 @@ jobs:
           done
 
           # Verify library files exist for every component
+          # Use --libdir + --libnames instead of --libfiles to avoid
+          # word-splitting on Windows paths with spaces (e.g. C:\Program Files\...)
           missing=0
+          libdir=$("$CONFIG" --libdir 2>/dev/null) || libdir=""
+          if [ "$RUNNER_OS" = "Windows" ] && [ -n "$libdir" ]; then
+            libdir="$(cygpath -u "$libdir" 2>/dev/null || echo "$libdir")"
+          fi
+          # Fall back to LLVM_LIBRARY_DIR if llvm-config reports a stale prefix
+          if [ -n "$libdir" ] && [ ! -d "$libdir" ]; then
+            fallback="${LLVM_LIBRARY_DIR:-}"
+            if [ "$RUNNER_OS" = "Windows" ] && [ -n "$fallback" ]; then
+              fallback="$(cygpath -u "$fallback" 2>/dev/null || echo "$fallback")"
+            fi
+            if [ -d "$fallback" ]; then
+              libdir="$fallback"
+            fi
+          fi
           for comp in $components; do
-            files=$("$CONFIG" --libfiles "$comp" 2>/dev/null) || continue
-            for f in $files; do
-              check="$f"
-              if [ "$RUNNER_OS" = "Windows" ]; then
-                check="$(cygpath -u "$f" 2>/dev/null || echo "$f")"
-              fi
-              if [ ! -f "$check" ]; then
-                echo "::warning::Missing library for $comp: $f"
+            names=$("$CONFIG" --libnames "$comp" 2>/dev/null) || continue
+            for name in $names; do
+              if [ ! -f "$libdir/$name" ]; then
+                echo "::warning::Missing library for $comp: $name"
                 missing=$((missing + 1))
               fi
             done
