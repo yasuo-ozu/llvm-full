@@ -93,13 +93,15 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
 
           # ── Linux: install Rust + LLVM inside the manylinux container ──
+          # gcc-toolset-13 provides GLIBCXX_3.4.32 needed by LLVM 20+ (built on Ubuntu 24.04 with GCC 13)
           CIBW_BEFORE_ALL_LINUX: >
             (dnf install -y ncurses-compat-libs 2>/dev/null || yum install -y ncurses-compat-libs 2>/dev/null || true) &&
+            (dnf install -y gcc-toolset-13-libstdc++-devel 2>/dev/null || yum install -y gcc-toolset-13-libstdc++-devel 2>/dev/null || true) &&
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
             bash {project}/install-llvm.sh ${{ matrix.version }}
           CIBW_ENVIRONMENT_LINUX: >
             PATH=/opt/llvm/bin:$HOME/.cargo/bin:$PATH
-            LD_LIBRARY_PATH=/opt/llvm/lib
+            LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/llvm/lib
             LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
             LIBCLANG_PATH=/opt/llvm/lib
 
