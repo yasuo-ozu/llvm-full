@@ -95,9 +95,10 @@ jobs:
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64
 
           # ── Linux: install Rust + LLVM inside the manylinux container ──
-          # AlmaLinux 9 has GCC 11 (GLIBCXX_3.4.29). LLVM 20+ built on Ubuntu
-          # 24.04 with GCC 13 needs GLIBCXX_3.4.32, so install gcc-toolset-13.
+          # - ncurses-compat-libs: older LLVM (10–15) links libtinfo.so.5
+          # - gcc-toolset-13: LLVM 20+ needs GLIBCXX_3.4.32 (AlmaLinux 9 base has 3.4.29)
           CIBW_BEFORE_ALL_LINUX: >
+            (dnf install -y ncurses-compat-libs || true) &&
             (dnf install -y gcc-toolset-13-gcc-c++ ||
              dnf install -y gcc-toolset-12-gcc-c++ ||
              echo "WARNING: Could not install gcc-toolset") &&

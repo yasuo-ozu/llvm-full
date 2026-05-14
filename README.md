@@ -2,6 +2,13 @@
 
 Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platforms.
 
+[![Test Action][badge-action]][wf-action] [![Test cibuildwheel][badge-cibw]][wf-cibw]
+
+[badge-action]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/test-action.yml/badge.svg
+[wf-action]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/test-action.yml
+[badge-cibw]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/test-cibuildwheel.yml/badge.svg
+[wf-cibw]: https://github.com/yasuo-ozu/llvm-full/actions/workflows/test-cibuildwheel.yml
+
 ## Build Status
 
 | Version | Status | Download |
@@ -146,7 +153,7 @@ steps:
 - `LIBCLANG_PATH` - Path to libclang shared library
 - `LLVM_INCLUDE_DIR` / `LLVM_LIBRARY_DIR` - Include and library directories
 - `LLVM_SYS_<MAJMIN>_PREFIX` - For Rust `llvm-sys` crate
-- `LD_LIBRARY_PATH` (Linux) / `DYLD_LIBRARY_PATH` (macOS) - Library search path
+- `LD_LIBRARY_PATH` (Linux) / `DYLD_FALLBACK_LIBRARY_PATH` (macOS) - Library search path
 - `CC` / `CXX` - Clang paths (when `env: true`)
 
 ### Shell Script (Docker / cibuildwheel)
@@ -191,28 +198,40 @@ jobs:
           env: true
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.23
+        uses: pypa/cibuildwheel@v2.23.2
         env:
-          # Linux: install inside the manylinux/musllinux container
+          # Prebuilt archives need GLIBC 2.32+; use manylinux_2_34 (AlmaLinux 9)
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64
+
+          # Linux: install LLVM inside the manylinux container
+          # - ncurses-compat-libs: older LLVM links libtinfo.so.5
+          # - gcc-toolset-13: LLVM 20+ needs GLIBCXX_3.4.32
           CIBW_BEFORE_ALL_LINUX: >
+            (dnf install -y ncurses-compat-libs || true) &&
+            (dnf install -y gcc-toolset-13-gcc-c++ || true) &&
             curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
             | bash -s -- 18.1.8
           CIBW_ENVIRONMENT_LINUX: >
-            LLVM_PREFIX=/opt/llvm
-            LLVM_CONFIG=/opt/llvm/bin/llvm-config
-            LIBCLANG_PATH=/opt/llvm/lib
             PATH=/opt/llvm/bin:$PATH
+            LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/llvm/lib
+            LLVM_SYS_181_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
           # macOS: install via the shell script
           CIBW_BEFORE_ALL_MACOS: >
             curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
             | bash -s -- 18.1.8
           CIBW_ENVIRONMENT_MACOS: >
-            LLVM_PREFIX=/opt/llvm
-            LLVM_CONFIG=/opt/llvm/bin/llvm-config
-            LIBCLANG_PATH=/opt/llvm/lib
             PATH=/opt/llvm/bin:$PATH
-          # Windows: uses the host-installed LLVM (set by the action above)
+            DYLD_FALLBACK_LIBRARY_PATH=/opt/llvm/lib
+            LLVM_SYS_181_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
+          # Windows: uses the host-installed LLVM (env vars set by the action)
 ```
+
+> **Note:** Adjust `LLVM_SYS_181_PREFIX` to match your LLVM version (e.g., `LLVM_SYS_220_PREFIX` for LLVM 22.0). The number is `MAJOR * 10 + MINOR` with no separator.
 
 ### Direct Download
 
