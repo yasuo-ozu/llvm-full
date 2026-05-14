@@ -52,7 +52,7 @@ jobs:
           - target: macos-aarch64
             runner: macos-latest
           - target: macos-x86_64
-            runner: macos-13
+            runner: macos-15-intel
           - target: windows-msvc
             runner: windows-latest
           - target: windows-gnu
