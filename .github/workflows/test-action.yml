@@ -87,9 +87,8 @@ jobs:
             elif command -v llvm-config.exe >/dev/null 2>&1; then
               CONFIG="llvm-config.exe"
             else
-              echo "::warning::llvm-config not found in PATH or LLVM_CONFIG"
-              echo "Skipping llvm-config verification"
-              exit 0
+              echo "::error::llvm-config not found in PATH or LLVM_CONFIG"
+              exit 1
             fi
           fi
 
@@ -98,9 +97,8 @@ jobs:
           # Check that llvm-config is actually runnable (may fail for cross-target
           # binaries that need runtime DLLs not present on the host)
           if ! version=$("$CONFIG" --version 2>/dev/null); then
-            echo "::warning::llvm-config found but not runnable (missing runtime libraries?)"
-            echo "Skipping llvm-config verification"
-            exit 0
+            echo "::error::llvm-config found but not runnable (missing runtime libraries?)"
+            exit 1
           fi
           echo "LLVM version: $version"
 

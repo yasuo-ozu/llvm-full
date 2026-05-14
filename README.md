@@ -214,33 +214,6 @@ jobs:
           # Windows: uses the host-installed LLVM (set by the action above)
 ```
 
-### Rust Crate
-
-Add to your `Cargo.toml` with a version feature flag:
-
-```toml
-[build-dependencies]
-llvm-full = { version = "0.1", features = ["llvm18-1"] }
-```
-
-Available features: `llvm10-0`, `llvm11-0`, `llvm12-0`, `llvm13-0`, `llvm14-0`,
-`llvm15-0`, `llvm16-0`, `llvm17-0`, `llvm18-1`, `llvm19-1`, `llvm20-1`, `llvm21-1`, `llvm22-1`.
-
-The build script automatically downloads and extracts the correct LLVM archive for your target platform, and sets up `cargo:rustc-link-search` and `DEP_LLVM_FULL_ROOT` for downstream crates.
-
-You can also use it as a git dependency:
-
-```toml
-[build-dependencies]
-llvm-full = { git = "https://github.com/yasuo-ozu/llvm-full", features = ["llvm18-1"] }
-```
-
-To skip download and use a pre-installed LLVM, set `LLVM_FULL_PREFIX`:
-
-```bash
-LLVM_FULL_PREFIX=/usr/lib/llvm-18 cargo build
-```
-
 ### Direct Download
 
 Archives are available from [GitHub Releases](https://github.com/yasuo-ozu/llvm-full/releases):

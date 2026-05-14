@@ -1,0 +1,12 @@
+[package]
+name = "pyo3-llvm-sys"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "pyo3_llvm_sys"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+llvm-sys = { version = "181", features = ["no-llvm-linking"] }

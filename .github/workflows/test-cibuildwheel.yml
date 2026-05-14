@@ -1,0 +1,142 @@
+name: Test cibuildwheel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: cibw / ${{ matrix.version }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "10.0.1"
+          - "11.0.1"
+          - "12.0.1"
+          - "13.0.1"
+          - "14.0.6"
+          - "15.0.7"
+          - "16.0.6"
+          - "17.0.6"
+          - "18.1.8"
+          - "19.1.7"
+          - "20.1.8"
+          - "21.1.4"
+          - "22.1.0"
+        target:
+          - linux-x86_64
+          - linux-aarch64
+          - macos-aarch64
+          - macos-x86_64
+          - windows-msvc
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-latest
+            cibw_build: "cp312-manylinux_x86_64"
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+            cibw_build: "cp312-manylinux_aarch64"
+          - target: macos-aarch64
+            runner: macos-latest
+            cibw_build: "cp312-macosx_arm64"
+          - target: macos-x86_64
+            runner: macos-15-intel
+            cibw_build: "cp312-macosx_x86_64"
+          - target: windows-msvc
+            runner: windows-latest
+            cibw_build: "cp312-win_amd64"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compute LLVM variables
+        id: vars
+        shell: bash
+        run: |
+          VERSION="${{ matrix.version }}"
+          MAJOR="${VERSION%%.*}"
+          MINOR="$(echo "$VERSION" | cut -d. -f2)"
+          MAJMIN="${MAJOR}${MINOR}"
+          echo "majmin=${MAJMIN}" >> "$GITHUB_OUTPUT"
+
+      - name: Patch llvm-sys version in Cargo.toml
+        shell: bash
+        run: |
+          sed -i.bak 's|version = "181"|version = "${{ steps.vars.outputs.majmin }}"|' examples/pyo3-llvm-sys/Cargo.toml
+          rm -f examples/pyo3-llvm-sys/Cargo.toml.bak
+          cat examples/pyo3-llvm-sys/Cargo.toml
+
+      # Install LLVM on the host for Windows (cibuildwheel on Windows is not containerized)
+      - name: Install LLVM (Windows)
+        if: runner.os == 'Windows'
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2
+        with:
+          package-dir: examples/pyo3-llvm-sys
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+
+          # ── Linux: install Rust + LLVM inside the manylinux container ──
+          CIBW_BEFORE_ALL_LINUX: >
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
+            bash {project}/install-llvm.sh ${{ matrix.version }}
+          CIBW_ENVIRONMENT_LINUX: >
+            PATH=/opt/llvm/bin:$HOME/.cargo/bin:$PATH
+            LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
+          # ── macOS: install LLVM via the local shell script ──
+          CIBW_BEFORE_ALL_MACOS: >
+            bash {project}/install-llvm.sh ${{ matrix.version }}
+          CIBW_ENVIRONMENT_MACOS: >
+            PATH=/opt/llvm/bin:$PATH
+            LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
+          # ── Windows: uses host-installed LLVM (set by the action above) ──
+          # LLVM_SYS_*_PREFIX and LIBCLANG_PATH are already set by the action
+
+      - name: Verify wheels
+        shell: bash
+        run: |
+          echo "Built wheels:"
+          ls -lh wheelhouse/
+          count=$(ls wheelhouse/*.whl 2>/dev/null | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No wheel files found in wheelhouse/"
+            exit 1
+          fi
+          echo "Found $count wheel(s)"
+
+          for whl in wheelhouse/*.whl; do
+            echo "Inspecting $whl for native library..."
+            python3 -c "
+          import zipfile, sys
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              names = z.namelist()
+              native = [n for n in names if 'pyo3_llvm_sys' in n and (n.endswith('.so') or n.endswith('.pyd') or n.endswith('.dylib'))]
+              if not native:
+                  print('::error::No native library found in ' + sys.argv[1])
+                  for n in sorted(names):
+                      print('  ' + n)
+                  sys.exit(1)
+              for n in native:
+                  info = z.getinfo(n)
+                  print(f'  Native library: {n} ({info.file_size} bytes)')
+                  if info.file_size == 0:
+                      print('::error::Native library is empty: ' + n)
+                      sys.exit(1)
+          " "$whl" || exit 1
+          done
