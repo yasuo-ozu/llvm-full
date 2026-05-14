@@ -88,30 +88,28 @@ jobs:
         env:
           CIBW_BUILD: ${{ matrix.cibw_build }}
 
-          # Use manylinux_2_28 (AlmaLinux 8, GCC 8.5) for GLIBCXX_3.4.25 compat
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          # Use manylinux_2_34 (AlmaLinux 9, GLIBC 2.34) — prebuilt LLVM archives
+          # are built on Ubuntu 22.04+ and need GLIBC 2.32+, which manylinux_2_28
+          # (GLIBC 2.28) cannot provide.
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64
 
           # ── Linux: install Rust + LLVM inside the manylinux container ──
-          # Prebuilt LLVM archives are built on Ubuntu 22.04+ (GCC 11+) and need
-          # GLIBCXX > 3.4.25. AlmaLinux 8 base only has GCC 8.5 (GLIBCXX_3.4.25).
-          # Install gcc-toolset to get a newer libstdc++ with the required symbols.
+          # AlmaLinux 9 has GCC 11 (GLIBCXX_3.4.29). LLVM 20+ built on Ubuntu
+          # 24.04 with GCC 13 needs GLIBCXX_3.4.32, so install gcc-toolset-13.
           CIBW_BEFORE_ALL_LINUX: >
-            (dnf install -y ncurses-compat-libs || yum install -y ncurses-compat-libs || true) &&
             (dnf install -y gcc-toolset-13-gcc-c++ ||
              dnf install -y gcc-toolset-12-gcc-c++ ||
-             dnf install -y gcc-toolset-11-gcc-c++ ||
              echo "WARNING: Could not install gcc-toolset") &&
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
             bash {project}/install-llvm.sh ${{ matrix.version }} &&
             GCC_LIB=$(ls -d /opt/rh/gcc-toolset-*/root/usr/lib64 2>/dev/null | sort -Vr | head -1) &&
             export LD_LIBRARY_PATH="${GCC_LIB:-}:/opt/llvm/lib:${LD_LIBRARY_PATH:-}" &&
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" &&
             /opt/llvm/bin/llvm-config --version ||
-            (echo "llvm-config failed - diagnostics:" && ldd /opt/llvm/bin/llvm-config 2>&1 || true && strings /usr/lib64/libstdc++.so.6 2>/dev/null | grep GLIBCXX | tail -5 || true && ls /opt/rh/ 2>/dev/null || true && false)
+            (echo "llvm-config failed - diagnostics:" && ldd /opt/llvm/bin/llvm-config 2>&1 || true && false)
           CIBW_ENVIRONMENT_LINUX: >
             PATH=/opt/llvm/bin:$HOME/.cargo/bin:$PATH
-            LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/rh/gcc-toolset-12/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/llvm/lib
+            LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/rh/gcc-toolset-12/root/usr/lib64:/opt/llvm/lib
             LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
             LIBCLANG_PATH=/opt/llvm/lib
 
