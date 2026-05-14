@@ -90,10 +90,14 @@ jobs:
 
           # ── Linux: install Rust + LLVM inside the manylinux container ──
           CIBW_BEFORE_ALL_LINUX: >
+            yum install -y ncurses-compat-libs 2>/dev/null || yum install -y ncurses-libs 2>/dev/null || true &&
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
-            bash {project}/install-llvm.sh ${{ matrix.version }}
+            bash {project}/install-llvm.sh ${{ matrix.version }} &&
+            LD_LIBRARY_PATH=/opt/llvm/lib /opt/llvm/bin/llvm-config --version ||
+            (echo "=== llvm-config diagnostic ===" && ldd /opt/llvm/bin/llvm-config 2>&1 || true && file /opt/llvm/bin/llvm-config 2>&1 || true && exit 1)
           CIBW_ENVIRONMENT_LINUX: >
             PATH=/opt/llvm/bin:$HOME/.cargo/bin:$PATH
+            LD_LIBRARY_PATH=/opt/llvm/lib
             LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
             LIBCLANG_PATH=/opt/llvm/lib
 
@@ -102,6 +106,7 @@ jobs:
             bash {project}/install-llvm.sh ${{ matrix.version }}
           CIBW_ENVIRONMENT_MACOS: >
             PATH=/opt/llvm/bin:$PATH
+            DYLD_FALLBACK_LIBRARY_PATH=/opt/llvm/lib
             LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
             LIBCLANG_PATH=/opt/llvm/lib
 

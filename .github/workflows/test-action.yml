@@ -101,9 +101,10 @@ jobs:
           # may not be executable on the host runner.
           cross_target=false
           case "$TARGET" in
-            *-musl)        cross_target=true ;;  # musl binary on glibc host
-            linux-i686)    cross_target=true ;;  # i686 binary on x86_64 host
-            windows-i686-*) cross_target=true ;; # i686 binary on x86_64 host
+            *-musl)         cross_target=true ;;  # musl binary on glibc host
+            linux-i686)     cross_target=true ;;  # i686 binary on x86_64 host
+            windows-i686-*) cross_target=true ;;  # i686 binary on x86_64 host
+            windows-gnu)    cross_target=true ;;  # MinGW binary may lack runtime DLLs
           esac
 
           # Check that llvm-config is actually runnable
@@ -155,7 +156,13 @@ jobs:
             echo "::error::llvm-config found but not runnable"
             echo "Output: $version"
             config_full="$(command -v "$CONFIG" 2>/dev/null || echo "$CONFIG")"
-            if [ "$RUNNER_OS" != "Windows" ]; then
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              config_full_w="$(cygpath -u "$config_full" 2>/dev/null || echo "$config_full")"
+              echo "--- file ---"
+              file "$config_full_w" 2>&1 || true
+              echo "--- PATH (LLVM/MinGW entries) ---"
+              echo "$PATH" | tr ':' '\n' | grep -iE 'llvm|mingw|msys' || echo "(none)"
+            else
               echo "--- ldd ---"
               ldd "$config_full" 2>&1 || true
               echo "--- file ---"
