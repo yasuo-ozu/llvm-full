@@ -81,7 +81,7 @@ jobs:
           version: ${{ matrix.version }}
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2
+        uses: pypa/cibuildwheel@v2.23.2
         with:
           package-dir: examples/pyo3-llvm-sys
           output-dir: wheelhouse

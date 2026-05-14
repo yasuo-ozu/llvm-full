@@ -191,7 +191,7 @@ jobs:
           env: true
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2
+        uses: pypa/cibuildwheel@v2.23
         env:
           # Linux: install inside the manylinux/musllinux container
           CIBW_BEFORE_ALL_LINUX: >

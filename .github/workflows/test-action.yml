@@ -79,6 +79,8 @@ jobs:
       # ── Verify llvm-config and all components ─────────────────────
       - name: Verify llvm-config and components
         shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
         run: |
           CONFIG="${LLVM_CONFIG:-}"
           if [ -z "$CONFIG" ]; then
@@ -93,14 +95,75 @@ jobs:
           fi
 
           echo "llvm-config: $CONFIG"
+          echo "Target: $TARGET"
 
-          # Check that llvm-config is actually runnable (may fail for cross-target
-          # binaries that need runtime DLLs not present on the host)
-          if ! version=$("$CONFIG" --version 2>/dev/null); then
-            echo "::error::llvm-config found but not runnable (missing runtime libraries?)"
+          # Determine if this is a cross-target scenario where the binary
+          # may not be executable on the host runner.
+          cross_target=false
+          case "$TARGET" in
+            *-musl)        cross_target=true ;;  # musl binary on glibc host
+            linux-i686)    cross_target=true ;;  # i686 binary on x86_64 host
+            windows-i686-*) cross_target=true ;; # i686 binary on x86_64 host
+          esac
+
+          # Check that llvm-config is actually runnable
+          if version=$("$CONFIG" --version 2>&1); then
+            echo "LLVM version: $version"
+          elif [ "$cross_target" = "true" ]; then
+            echo "Cross-target binary not directly runnable on host (expected for $TARGET)"
+            # Resolve the binary path
+            config_path="$(command -v "$CONFIG" 2>/dev/null || echo "$CONFIG")"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              config_path="$(cygpath -u "$config_path" 2>/dev/null || echo "$config_path")"
+            fi
+            if [ ! -f "$config_path" ]; then
+              echo "::error::llvm-config binary not found at: $config_path"
+              exit 1
+            fi
+            echo "llvm-config binary: $config_path ($(wc -c < "$config_path") bytes)"
+            file "$config_path" 2>/dev/null || true
+
+            # Verify key directories and headers exist instead
+            prefix="${LLVM_PREFIX:-}"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              prefix="$(cygpath -u "$prefix" 2>/dev/null || echo "$prefix")"
+            fi
+            echo "Verifying installation at $prefix..."
+            for d in bin include lib; do
+              if [ ! -d "$prefix/$d" ]; then
+                echo "::error::Missing directory: $prefix/$d"
+                exit 1
+              fi
+            done
+            for h in "llvm-c/Types.h" "llvm-c/TargetMachine.h"; do
+              if [ ! -f "$prefix/include/$h" ]; then
+                echo "::warning::Missing header: $h"
+              fi
+            done
+
+            # Verify library directory has files
+            libdir="$prefix/lib"
+            lib_count=$(find "$libdir" -maxdepth 1 -name '*.a' -o -name '*.so' -o -name '*.lib' -o -name '*.dylib' 2>/dev/null | wc -l)
+            echo "Library files in $libdir: $lib_count"
+            if [ "$lib_count" -eq 0 ]; then
+              echo "::error::No library files found in $libdir"
+              exit 1
+            fi
+            echo "Cross-target file verification passed."
+            exit 0
+          else
+            echo "::error::llvm-config found but not runnable"
+            echo "Output: $version"
+            if [ "$RUNNER_OS" != "Windows" ]; then
+              echo "--- ldd ---"
+              ldd "$CONFIG" 2>&1 || true
+              echo "--- file ---"
+              file "$CONFIG" 2>&1 || true
+              echo "--- LD_LIBRARY_PATH ---"
+              echo "${LD_LIBRARY_PATH:-not set}"
+            fi
             exit 1
           fi
-          echo "LLVM version: $version"
 
           # List all components
           components=$("$CONFIG" --components)
