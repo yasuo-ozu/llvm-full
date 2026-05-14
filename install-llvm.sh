@@ -111,20 +111,25 @@ if ! curl -fSL --retry 3 --retry-delay 2 -o "$ARCHIVE_PATH" "$ARCHIVE_URL"; then
   exit 1
 fi
 
-mkdir -p "$PREFIX"
+# Use sudo if the prefix directory is not writable by the current user
+SUDO=""
+if ! mkdir -p "$PREFIX" 2>/dev/null; then
+  SUDO="sudo"
+  $SUDO mkdir -p "$PREFIX"
+fi
 
 echo "Extracting to ${PREFIX}..."
 if [ "$EXT" = "zip" ]; then
   if command -v 7z >/dev/null 2>&1; then
-    7z x "$ARCHIVE_PATH" -o"$PREFIX" -y
+    $SUDO 7z x "$ARCHIVE_PATH" -o"$PREFIX" -y
   elif command -v unzip >/dev/null 2>&1; then
-    unzip -o "$ARCHIVE_PATH" -d "$PREFIX"
+    $SUDO unzip -o "$ARCHIVE_PATH" -d "$PREFIX"
   else
     echo "No zip extractor found (need 7z or unzip)" >&2
     exit 1
   fi
 else
-  tar xJf "$ARCHIVE_PATH" -C "$PREFIX"
+  $SUDO tar xJf "$ARCHIVE_PATH" -C "$PREFIX"
 fi
 
 rm -f "$ARCHIVE_PATH"

@@ -154,11 +154,12 @@ jobs:
           else
             echo "::error::llvm-config found but not runnable"
             echo "Output: $version"
+            config_full="$(command -v "$CONFIG" 2>/dev/null || echo "$CONFIG")"
             if [ "$RUNNER_OS" != "Windows" ]; then
               echo "--- ldd ---"
-              ldd "$CONFIG" 2>&1 || true
+              ldd "$config_full" 2>&1 || true
               echo "--- file ---"
-              file "$CONFIG" 2>&1 || true
+              file "$config_full" 2>&1 || true
               echo "--- LD_LIBRARY_PATH ---"
               echo "${LD_LIBRARY_PATH:-not set}"
             fi
