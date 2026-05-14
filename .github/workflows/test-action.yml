@@ -67,28 +67,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ── Runtime dependencies for non-native targets ───────────────
-      - name: Install musl runtime
-        if: matrix.target == 'linux-x86_64-musl' || matrix.target == 'linux-aarch64-musl'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq musl
-
-      - name: Install i386 runtime
-        if: matrix.target == 'linux-i686'
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq libc6:i386 libstdc++6:i386 zlib1g:i386
-
-      - name: Add MINGW64 to PATH
-        if: matrix.target == 'windows-gnu'
-        shell: bash
-        run: echo "C:\\msys64\\mingw64\\bin" >> "$GITHUB_PATH"
-
-      - name: Add MINGW32 to PATH
-        if: matrix.target == 'windows-i686-gnu'
-        shell: bash
-        run: echo "C:\\msys64\\mingw32\\bin" >> "$GITHUB_PATH"
-
       # ── Install LLVM via the action ───────────────────────────────
       - name: Install LLVM
         id: llvm

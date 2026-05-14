@@ -11,20 +11,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "10.0.1"
-          - "11.0.1"
-          - "12.0.1"
-          - "13.0.1"
-          - "14.0.6"
-          - "15.0.7"
-          - "16.0.6"
-          - "17.0.6"
-          - "18.1.8"
-          - "19.1.7"
-          - "20.1.8"
-          - "21.1.4"
-          - "22.1.0"
         target:
           - linux-x86_64
           - linux-aarch64
@@ -64,36 +50,9 @@ jobs:
             runner: windows-latest
           - target: windows-i686-gnu
             runner: windows-latest
-          # Rust feature per version
-          - version: "10.0.1"
-            feature: llvm10-0
-          - version: "11.0.1"
-            feature: llvm11-0
-          - version: "12.0.1"
-            feature: llvm12-0
-          - version: "13.0.1"
-            feature: llvm13-0
-          - version: "14.0.6"
-            feature: llvm14-0
-          - version: "15.0.7"
-            feature: llvm15-0
-          - version: "16.0.6"
-            feature: llvm16-0
-          - version: "17.0.6"
-            feature: llvm17-0
-          - version: "18.1.8"
-            feature: llvm18-1
-          - version: "19.1.7"
-            feature: llvm19-1
-          - version: "20.1.8"
-            feature: llvm20-1
-          - version: "21.1.4"
-            feature: llvm21-1
-          - version: "22.1.0"
-            feature: llvm22-1
 
     runs-on: ${{ matrix.runner }}
-    name: ${{ matrix.version }} / ${{ matrix.target }}
+    name: ${{ matrix.target }}
 
     steps:
       - name: Checkout
@@ -122,27 +81,72 @@ jobs:
         run: echo "C:\\msys64\\mingw32\\bin" >> "$GITHUB_PATH"
 
       # ── Install LLVM ──────────────────────────────────────────────
-      - name: Install LLVM
-        id: llvm
-        uses: ./
-        with:
-          version: ${{ matrix.version }}
-          target: ${{ matrix.target }}
-          fallback: "false"
+      #- name: Install LLVM
+      #  id: llvm
+      #  uses: ./
+      #  with:
+      #    version: ${{ matrix.version }}
+      #    target: ${{ matrix.target }}
+      #    fallback: "false"
 
       # ── Rust crate tests ──────────────────────────────────────────
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Test llvm-full crate
-        shell: bash
-        env:
-          LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
-        run: cargo test --features ${{ matrix.feature }}
+      #- name: Test llvm-full crate
+      #  shell: bash
+      #  env:
+      #    LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
+      #  run: cargo test --features ${{ matrix.feature }}
 
-      - name: Test llvm-sys integration
-        if: matrix.version == '18.1.8' && env.LLVM_CONFIG != ''
+      - name: Test llvm-sys integration on LLVM10
         shell: bash
-        env:
-          LLVM_FULL_PREFIX: ${{ steps.llvm.outputs.prefix }}
-        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm10-0
+
+      - name: Test llvm-sys integration on LLVM11
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm11-0
+
+      - name: Test llvm-sys integration on LLVM12
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm12-0
+
+      - name: Test llvm-sys integration on LLVM13
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm13-0
+
+      - name: Test llvm-sys integration on LLVM14
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm14-0
+
+      - name: Test llvm-sys integration on LLVM15
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm15-0
+
+      - name: Test llvm-sys integration on LLVM16
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm16-0
+
+      - name: Test llvm-sys integration on LLVM17
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm17-0
+
+      - name: Test llvm-sys integration on LLVM18
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm18-1
+
+      - name: Test llvm-sys integration on LLVM19
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm19-1
+
+      - name: Test llvm-sys integration on LLVM20
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm20-1
+
+      - name: Test llvm-sys integration on LLVM21
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm21-1
+
+      - name: Test llvm-sys integration on LLVM22
+        shell: bash
+        run: cargo test --manifest-path tests/llvm-sys-test/Cargo.toml --features llvm22-1

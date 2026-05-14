@@ -4,8 +4,35 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
+[features]
+llvm10-0 = ["dep:llvm-sys-100", "llvm-full/llvm10-0"]
+llvm11-0 = ["dep:llvm-sys-110", "llvm-full/llvm11-0"]
+llvm12-0 = ["dep:llvm-sys-120", "llvm-full/llvm12-0"]
+llvm13-0 = ["dep:llvm-sys-130", "llvm-full/llvm13-0"]
+llvm14-0 = ["dep:llvm-sys-140", "llvm-full/llvm14-0"]
+llvm15-0 = ["dep:llvm-sys-150", "llvm-full/llvm15-0"]
+llvm16-0 = ["dep:llvm-sys-160", "llvm-full/llvm16-0"]
+llvm17-0 = ["dep:llvm-sys-170", "llvm-full/llvm17-0"]
+llvm18-1 = ["dep:llvm-sys-181", "llvm-full/llvm18-1"]
+llvm19-1 = ["dep:llvm-sys-191", "llvm-full/llvm19-1"]
+llvm20-1 = ["dep:llvm-sys-201", "llvm-full/llvm20-1"]
+llvm21-1 = ["dep:llvm-sys-211", "llvm-full/llvm21-1"]
+llvm22-1 = ["dep:llvm-sys-221", "llvm-full/llvm22-1"]
+
 [build-dependencies]
-llvm-full = { path = "../..", features = ["llvm18-1"] }
+llvm-full = { path = "../.." }
 
 [dependencies]
-llvm-sys = { version = "181", features = ["no-llvm-linking"] }
+llvm-sys-100 = { package = "llvm-sys", version = "100", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-110 = { package = "llvm-sys", version = "110", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-120 = { package = "llvm-sys", version = "120", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-130 = { package = "llvm-sys", version = "130", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-140 = { package = "llvm-sys", version = "140", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-150 = { package = "llvm-sys", version = "150", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-160 = { package = "llvm-sys", version = "160", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-170 = { package = "llvm-sys", version = "170", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-181 = { package = "llvm-sys", version = "181", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-191 = { package = "llvm-sys", version = "191", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-201 = { package = "llvm-sys", version = "201", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-211 = { package = "llvm-sys", version = "211", optional = true, features = ["no-llvm-linking"] }
+llvm-sys-221 = { package = "llvm-sys", version = "221", optional = true, features = ["no-llvm-linking"] }

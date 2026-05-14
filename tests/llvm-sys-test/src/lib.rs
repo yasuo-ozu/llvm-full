@@ -1,3 +1,30 @@
+#[cfg(feature = "llvm10-0")]
+extern crate llvm_sys_100 as llvm_sys;
+#[cfg(feature = "llvm11-0")]
+extern crate llvm_sys_110 as llvm_sys;
+#[cfg(feature = "llvm12-0")]
+extern crate llvm_sys_120 as llvm_sys;
+#[cfg(feature = "llvm13-0")]
+extern crate llvm_sys_130 as llvm_sys;
+#[cfg(feature = "llvm14-0")]
+extern crate llvm_sys_140 as llvm_sys;
+#[cfg(feature = "llvm15-0")]
+extern crate llvm_sys_150 as llvm_sys;
+#[cfg(feature = "llvm16-0")]
+extern crate llvm_sys_160 as llvm_sys;
+#[cfg(feature = "llvm17-0")]
+extern crate llvm_sys_170 as llvm_sys;
+#[cfg(feature = "llvm18-1")]
+extern crate llvm_sys_181 as llvm_sys;
+#[cfg(feature = "llvm19-1")]
+extern crate llvm_sys_191 as llvm_sys;
+#[cfg(feature = "llvm20-1")]
+extern crate llvm_sys_201 as llvm_sys;
+#[cfg(feature = "llvm21-1")]
+extern crate llvm_sys_211 as llvm_sys;
+#[cfg(feature = "llvm22-1")]
+extern crate llvm_sys_221 as llvm_sys;
+
 #[cfg(test)]
 mod tests {
     #[test]

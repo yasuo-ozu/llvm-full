@@ -408,7 +408,52 @@ runs:
         cmake --build "$build_root" --config Release --target install --parallel
         echo "::endgroup::"
 
-    # ── 5. Set up environment variables ─────────────────────────────────
+    # ── 5. Install runtime dependencies ─────────────────────────────────
+    - name: Install musl runtime
+      if: (steps.target.outputs.target == 'linux-x86_64-musl' || steps.target.outputs.target == 'linux-aarch64-musl') && runner.os == 'Linux'
+      shell: bash
+      run: |
+        if ! dpkg -s musl >/dev/null 2>&1; then
+          sudo apt-get update -qq && sudo apt-get install -y -qq musl
+        fi
+
+    - name: Install i386 runtime
+      if: steps.target.outputs.target == 'linux-i686' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        if ! dpkg --print-foreign-architectures | grep -q i386; then
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+        fi
+        need_install=false
+        for pkg in libc6:i386 libstdc++6:i386 zlib1g:i386; do
+          if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+            need_install=true
+            break
+          fi
+        done
+        if [ "$need_install" = "true" ]; then
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc6:i386 libstdc++6:i386 zlib1g:i386
+        fi
+
+    - name: Add MINGW64 to PATH
+      if: steps.target.outputs.target == 'windows-gnu' && runner.os == 'Windows'
+      shell: bash
+      run: |
+        if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+          echo "C:\\msys64\\mingw64\\bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: Add MINGW32 to PATH
+      if: steps.target.outputs.target == 'windows-i686-gnu' && runner.os == 'Windows'
+      shell: bash
+      run: |
+        if ! command -v i686-w64-mingw32-gcc >/dev/null 2>&1; then
+          echo "C:\\msys64\\mingw32\\bin" >> "$GITHUB_PATH"
+        fi
+
+    # ── 6. Set up environment variables ─────────────────────────────────
     - name: Set up LLVM environment
       id: setup
       shell: bash
@@ -478,7 +523,7 @@ runs:
         # LLVM_SYS_*_PREFIX for Rust llvm-sys crate
         echo "LLVM_SYS_${{ steps.parse.outputs.majmin }}_PREFIX=${INSTALL_DIR}" >> "$GITHUB_ENV"
 
-    # ── 6. Optionally set CC/CXX ────────────────────────────────────────
+    # ── 7. Optionally set CC/CXX ────────────────────────────────────────
     - name: Set CC and CXX
       if: inputs.env == 'true'
       shell: bash
@@ -503,7 +548,7 @@ runs:
           fi
         fi
 
-    # ── 7. Verify installation ──────────────────────────────────────────
+    # ── 8. Verify installation ──────────────────────────────────────────
     - name: Verify LLVM installation
       shell: bash
       run: |
