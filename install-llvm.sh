@@ -64,6 +64,57 @@ case "$OS" in
     esac
     EXT="tar.xz"
     ;;
+  FreeBSD)
+    case "$ARCH" in
+      amd64|x86_64)
+        TARGET="freebsd-x86_64"
+        ;;
+      i386|i686)
+        TARGET="freebsd-i686"
+        ;;
+      *)
+        echo "Unsupported FreeBSD architecture: $ARCH" >&2
+        exit 1
+        ;;
+    esac
+    EXT="tar.xz"
+    ;;
+  NetBSD)
+    case "$ARCH" in
+      amd64|x86_64)
+        TARGET="netbsd-x86_64"
+        ;;
+      aarch64|evbarm)
+        TARGET="netbsd-aarch64"
+        ;;
+      i386|i686)
+        TARGET="netbsd-i686"
+        ;;
+      *)
+        echo "Unsupported NetBSD architecture: $ARCH" >&2
+        exit 1
+        ;;
+    esac
+    EXT="tar.xz"
+    ;;
+  OpenBSD)
+    case "$ARCH" in
+      amd64|x86_64)
+        TARGET="openbsd-x86_64"
+        ;;
+      arm64|aarch64)
+        TARGET="openbsd-aarch64"
+        ;;
+      i386|i686)
+        TARGET="openbsd-i686"
+        ;;
+      *)
+        echo "Unsupported OpenBSD architecture: $ARCH" >&2
+        exit 1
+        ;;
+    esac
+    EXT="tar.xz"
+    ;;
   MINGW*|MSYS*)
     case "$ARCH" in
       i686|i386)

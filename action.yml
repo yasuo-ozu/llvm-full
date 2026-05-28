@@ -13,7 +13,7 @@ inputs:
     description: "The directory to install LLVM to. Defaults to a platform-appropriate location."
     required: false
   target:
-    description: "Target name override. Auto-detected if not set. Valid: linux-x86_64, linux-aarch64, linux-x86_64-musl, linux-aarch64-musl, linux-i686, macos-aarch64, macos-x86_64, windows-msvc, windows-gnu, windows-aarch64-msvc, windows-i686-msvc, windows-i686-gnu."
+    description: "Target name override. Auto-detected if not set. Valid: linux-x86_64, linux-aarch64, linux-x86_64-musl, linux-aarch64-musl, linux-i686, macos-aarch64, macos-x86_64, windows-msvc, windows-gnu, windows-aarch64-msvc, windows-i686-msvc, windows-i686-gnu, freebsd-x86_64, freebsd-i686, netbsd-x86_64, netbsd-aarch64, netbsd-i686, openbsd-x86_64, openbsd-aarch64, openbsd-i686."
     required: false
   env:
     description: "Whether to set CC and CXX environment variables to the installed Clang. Default: false."
@@ -82,6 +82,29 @@ runs:
           else
             TARGET="macos-x86_64"
           fi
+        elif [ "$(uname -s)" = "FreeBSD" ]; then
+          arch="$(uname -m)"
+          case "$arch" in
+            amd64|x86_64) TARGET="freebsd-x86_64" ;;
+            i386|i686)    TARGET="freebsd-i686" ;;
+            *)            echo "Unsupported FreeBSD arch: $arch" >&2; exit 1 ;;
+          esac
+        elif [ "$(uname -s)" = "NetBSD" ]; then
+          arch="$(uname -m)"
+          case "$arch" in
+            amd64|x86_64)      TARGET="netbsd-x86_64" ;;
+            aarch64|evbarm)    TARGET="netbsd-aarch64" ;;
+            i386|i686)         TARGET="netbsd-i686" ;;
+            *)                 echo "Unsupported NetBSD arch: $arch" >&2; exit 1 ;;
+          esac
+        elif [ "$(uname -s)" = "OpenBSD" ]; then
+          arch="$(uname -m)"
+          case "$arch" in
+            amd64|x86_64)      TARGET="openbsd-x86_64" ;;
+            arm64|aarch64)     TARGET="openbsd-aarch64" ;;
+            i386|i686)         TARGET="openbsd-i686" ;;
+            *)                 echo "Unsupported OpenBSD arch: $arch" >&2; exit 1 ;;
+          esac
         else
           # Linux: detect architecture and libc
           arch="$(uname -m)"

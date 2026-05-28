@@ -89,6 +89,24 @@ Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platform
 | 11.0.1 | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-gnu] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-aarch64-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-i686-msvc] | [![][dl]][r-11.0.1] [files][f-11.0.1-windows-i686-gnu] |
 | 10.0.1 | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-gnu] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-aarch64-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-i686-msvc] | [![][dl]][r-10.0.1] [files][f-10.0.1-windows-i686-gnu] |
 
+### BSD
+
+| Version | FreeBSD x86_64 | FreeBSD i686 | NetBSD x86_64 | NetBSD AArch64 | NetBSD i686 | OpenBSD x86_64 | OpenBSD AArch64 | OpenBSD i686 |
+|---------:|------|------|------|------|------|------|------|------|
+| [22.1.0][r-22.1.0] | [files][f-22.1.0-freebsd-x86_64] | [files][f-22.1.0-freebsd-i686] | [files][f-22.1.0-netbsd-x86_64] | [files][f-22.1.0-netbsd-aarch64] | [files][f-22.1.0-netbsd-i686] | [files][f-22.1.0-openbsd-x86_64] | [files][f-22.1.0-openbsd-aarch64] | [files][f-22.1.0-openbsd-i686] |
+| [21.1.4][r-21.1.4] | [files][f-21.1.4-freebsd-x86_64] | [files][f-21.1.4-freebsd-i686] | [files][f-21.1.4-netbsd-x86_64] | [files][f-21.1.4-netbsd-aarch64] | [files][f-21.1.4-netbsd-i686] | [files][f-21.1.4-openbsd-x86_64] | [files][f-21.1.4-openbsd-aarch64] | [files][f-21.1.4-openbsd-i686] |
+| [20.1.8][r-20.1.8] | [files][f-20.1.8-freebsd-x86_64] | [files][f-20.1.8-freebsd-i686] | [files][f-20.1.8-netbsd-x86_64] | [files][f-20.1.8-netbsd-aarch64] | [files][f-20.1.8-netbsd-i686] | [files][f-20.1.8-openbsd-x86_64] | [files][f-20.1.8-openbsd-aarch64] | [files][f-20.1.8-openbsd-i686] |
+| [19.1.7][r-19.1.7] | [files][f-19.1.7-freebsd-x86_64] | [files][f-19.1.7-freebsd-i686] | [files][f-19.1.7-netbsd-x86_64] | [files][f-19.1.7-netbsd-aarch64] | [files][f-19.1.7-netbsd-i686] | [files][f-19.1.7-openbsd-x86_64] | [files][f-19.1.7-openbsd-aarch64] | [files][f-19.1.7-openbsd-i686] |
+| [18.1.8][r-18.1.8] | [files][f-18.1.8-freebsd-x86_64] | [files][f-18.1.8-freebsd-i686] | [files][f-18.1.8-netbsd-x86_64] | [files][f-18.1.8-netbsd-aarch64] | [files][f-18.1.8-netbsd-i686] | [files][f-18.1.8-openbsd-x86_64] | [files][f-18.1.8-openbsd-aarch64] | [files][f-18.1.8-openbsd-i686] |
+| [17.0.6][r-17.0.6] | [files][f-17.0.6-freebsd-x86_64] | [files][f-17.0.6-freebsd-i686] | [files][f-17.0.6-netbsd-x86_64] | [files][f-17.0.6-netbsd-aarch64] | [files][f-17.0.6-netbsd-i686] | [files][f-17.0.6-openbsd-x86_64] | [files][f-17.0.6-openbsd-aarch64] | [files][f-17.0.6-openbsd-i686] |
+| [16.0.6][r-16.0.6] | [files][f-16.0.6-freebsd-x86_64] | [files][f-16.0.6-freebsd-i686] | [files][f-16.0.6-netbsd-x86_64] | [files][f-16.0.6-netbsd-aarch64] | [files][f-16.0.6-netbsd-i686] | [files][f-16.0.6-openbsd-x86_64] | [files][f-16.0.6-openbsd-aarch64] | [files][f-16.0.6-openbsd-i686] |
+| [15.0.7][r-15.0.7] | [files][f-15.0.7-freebsd-x86_64] | [files][f-15.0.7-freebsd-i686] | [files][f-15.0.7-netbsd-x86_64] | [files][f-15.0.7-netbsd-aarch64] | [files][f-15.0.7-netbsd-i686] | [files][f-15.0.7-openbsd-x86_64] | [files][f-15.0.7-openbsd-aarch64] | [files][f-15.0.7-openbsd-i686] |
+| [14.0.6][r-14.0.6] | [files][f-14.0.6-freebsd-x86_64] | [files][f-14.0.6-freebsd-i686] | [files][f-14.0.6-netbsd-x86_64] | [files][f-14.0.6-netbsd-aarch64] | [files][f-14.0.6-netbsd-i686] | [files][f-14.0.6-openbsd-x86_64] | [files][f-14.0.6-openbsd-aarch64] | [files][f-14.0.6-openbsd-i686] |
+| [13.0.1][r-13.0.1] | [files][f-13.0.1-freebsd-x86_64] | [files][f-13.0.1-freebsd-i686] | [files][f-13.0.1-netbsd-x86_64] | [files][f-13.0.1-netbsd-aarch64] | [files][f-13.0.1-netbsd-i686] | [files][f-13.0.1-openbsd-x86_64] | [files][f-13.0.1-openbsd-aarch64] | [files][f-13.0.1-openbsd-i686] |
+| [12.0.1][r-12.0.1] | [files][f-12.0.1-freebsd-x86_64] | [files][f-12.0.1-freebsd-i686] | [files][f-12.0.1-netbsd-x86_64] | [files][f-12.0.1-netbsd-aarch64] | [files][f-12.0.1-netbsd-i686] | [files][f-12.0.1-openbsd-x86_64] | [files][f-12.0.1-openbsd-aarch64] | [files][f-12.0.1-openbsd-i686] |
+| [11.0.1][r-11.0.1] | [files][f-11.0.1-freebsd-x86_64] | [files][f-11.0.1-freebsd-i686] | [files][f-11.0.1-netbsd-x86_64] | [files][f-11.0.1-netbsd-aarch64] | [files][f-11.0.1-netbsd-i686] | [files][f-11.0.1-openbsd-x86_64] | [files][f-11.0.1-openbsd-aarch64] | [files][f-11.0.1-openbsd-i686] |
+| [10.0.1][r-10.0.1] | [files][f-10.0.1-freebsd-x86_64] | [files][f-10.0.1-freebsd-i686] | [files][f-10.0.1-netbsd-x86_64] | [files][f-10.0.1-netbsd-aarch64] | [files][f-10.0.1-netbsd-i686] | [files][f-10.0.1-openbsd-x86_64] | [files][f-10.0.1-openbsd-aarch64] | [files][f-10.0.1-openbsd-i686] |
+
 ## Usage
 
 ### GitHub Actions
@@ -265,6 +283,14 @@ https://github.com/yasuo-ozu/llvm-full/releases/download/v{VERSION}/llvm-{VERSIO
 | `windows-aarch64-msvc` | `aarch64-pc-windows-msvc` | `.zip` |
 | `windows-i686-msvc` | `i686-pc-windows-msvc` | `.zip` |
 | `windows-i686-gnu` | `i686-pc-windows-gnu` | `.zip` |
+| `freebsd-x86_64` | `x86_64-unknown-freebsd` | `.tar.xz` |
+| `freebsd-i686` | `i686-unknown-freebsd` | `.tar.xz` |
+| `netbsd-x86_64` | `x86_64-unknown-netbsd` | `.tar.xz` |
+| `netbsd-aarch64` | `aarch64-unknown-netbsd` | `.tar.xz` |
+| `netbsd-i686` | `i686-unknown-netbsd` | `.tar.xz` |
+| `openbsd-x86_64` | `x86_64-unknown-openbsd` | `.tar.xz` |
+| `openbsd-aarch64` | `aarch64-unknown-openbsd` | `.tar.xz` |
+| `openbsd-i686` | `i686-unknown-openbsd` | `.tar.xz` |
 
 ## Archive Contents
 
@@ -499,3 +525,108 @@ LLVM is distributed under the [Apache License 2.0 with LLVM Exceptions](https://
 [f-10.0.1-windows-aarch64-msvc]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-windows-aarch64-msvc.txt
 [f-10.0.1-windows-i686-msvc]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-windows-i686-msvc.txt
 [f-10.0.1-windows-i686-gnu]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-windows-i686-gnu.txt
+
+[f-22.1.0-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-freebsd-x86_64.txt
+[f-22.1.0-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-freebsd-i686.txt
+[f-22.1.0-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-netbsd-x86_64.txt
+[f-22.1.0-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-netbsd-aarch64.txt
+[f-22.1.0-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-netbsd-i686.txt
+[f-22.1.0-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-openbsd-x86_64.txt
+[f-22.1.0-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-openbsd-aarch64.txt
+[f-22.1.0-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b22.1.0/files-v22.1.0-openbsd-i686.txt
+[f-21.1.4-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-freebsd-x86_64.txt
+[f-21.1.4-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-freebsd-i686.txt
+[f-21.1.4-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-netbsd-x86_64.txt
+[f-21.1.4-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-netbsd-aarch64.txt
+[f-21.1.4-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-netbsd-i686.txt
+[f-21.1.4-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-openbsd-x86_64.txt
+[f-21.1.4-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-openbsd-aarch64.txt
+[f-21.1.4-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b21.1.4/files-v21.1.4-openbsd-i686.txt
+[f-20.1.8-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-freebsd-x86_64.txt
+[f-20.1.8-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-freebsd-i686.txt
+[f-20.1.8-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-netbsd-x86_64.txt
+[f-20.1.8-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-netbsd-aarch64.txt
+[f-20.1.8-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-netbsd-i686.txt
+[f-20.1.8-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-openbsd-x86_64.txt
+[f-20.1.8-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-openbsd-aarch64.txt
+[f-20.1.8-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b20.1.8/files-v20.1.8-openbsd-i686.txt
+[f-19.1.7-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-freebsd-x86_64.txt
+[f-19.1.7-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-freebsd-i686.txt
+[f-19.1.7-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-netbsd-x86_64.txt
+[f-19.1.7-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-netbsd-aarch64.txt
+[f-19.1.7-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-netbsd-i686.txt
+[f-19.1.7-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-openbsd-x86_64.txt
+[f-19.1.7-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-openbsd-aarch64.txt
+[f-19.1.7-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b19.1.7/files-v19.1.7-openbsd-i686.txt
+[f-18.1.8-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-freebsd-x86_64.txt
+[f-18.1.8-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-freebsd-i686.txt
+[f-18.1.8-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-netbsd-x86_64.txt
+[f-18.1.8-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-netbsd-aarch64.txt
+[f-18.1.8-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-netbsd-i686.txt
+[f-18.1.8-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-openbsd-x86_64.txt
+[f-18.1.8-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-openbsd-aarch64.txt
+[f-18.1.8-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b18.1.8/files-v18.1.8-openbsd-i686.txt
+[f-17.0.6-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-freebsd-x86_64.txt
+[f-17.0.6-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-freebsd-i686.txt
+[f-17.0.6-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-netbsd-x86_64.txt
+[f-17.0.6-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-netbsd-aarch64.txt
+[f-17.0.6-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-netbsd-i686.txt
+[f-17.0.6-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-openbsd-x86_64.txt
+[f-17.0.6-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-openbsd-aarch64.txt
+[f-17.0.6-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b17.0.6/files-v17.0.6-openbsd-i686.txt
+[f-16.0.6-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-freebsd-x86_64.txt
+[f-16.0.6-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-freebsd-i686.txt
+[f-16.0.6-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-netbsd-x86_64.txt
+[f-16.0.6-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-netbsd-aarch64.txt
+[f-16.0.6-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-netbsd-i686.txt
+[f-16.0.6-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-openbsd-x86_64.txt
+[f-16.0.6-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-openbsd-aarch64.txt
+[f-16.0.6-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b16.0.6/files-v16.0.6-openbsd-i686.txt
+[f-15.0.7-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-freebsd-x86_64.txt
+[f-15.0.7-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-freebsd-i686.txt
+[f-15.0.7-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-netbsd-x86_64.txt
+[f-15.0.7-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-netbsd-aarch64.txt
+[f-15.0.7-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-netbsd-i686.txt
+[f-15.0.7-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-openbsd-x86_64.txt
+[f-15.0.7-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-openbsd-aarch64.txt
+[f-15.0.7-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b15.0.7/files-v15.0.7-openbsd-i686.txt
+[f-14.0.6-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-freebsd-x86_64.txt
+[f-14.0.6-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-freebsd-i686.txt
+[f-14.0.6-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-netbsd-x86_64.txt
+[f-14.0.6-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-netbsd-aarch64.txt
+[f-14.0.6-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-netbsd-i686.txt
+[f-14.0.6-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-openbsd-x86_64.txt
+[f-14.0.6-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-openbsd-aarch64.txt
+[f-14.0.6-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b14.0.6/files-v14.0.6-openbsd-i686.txt
+[f-13.0.1-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-freebsd-x86_64.txt
+[f-13.0.1-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-freebsd-i686.txt
+[f-13.0.1-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-netbsd-x86_64.txt
+[f-13.0.1-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-netbsd-aarch64.txt
+[f-13.0.1-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-netbsd-i686.txt
+[f-13.0.1-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-openbsd-x86_64.txt
+[f-13.0.1-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-openbsd-aarch64.txt
+[f-13.0.1-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b13.0.1/files-v13.0.1-openbsd-i686.txt
+[f-12.0.1-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-freebsd-x86_64.txt
+[f-12.0.1-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-freebsd-i686.txt
+[f-12.0.1-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-netbsd-x86_64.txt
+[f-12.0.1-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-netbsd-aarch64.txt
+[f-12.0.1-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-netbsd-i686.txt
+[f-12.0.1-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-openbsd-x86_64.txt
+[f-12.0.1-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-openbsd-aarch64.txt
+[f-12.0.1-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b12.0.1/files-v12.0.1-openbsd-i686.txt
+[f-11.0.1-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-freebsd-x86_64.txt
+[f-11.0.1-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-freebsd-i686.txt
+[f-11.0.1-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-netbsd-x86_64.txt
+[f-11.0.1-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-netbsd-aarch64.txt
+[f-11.0.1-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-netbsd-i686.txt
+[f-11.0.1-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-openbsd-x86_64.txt
+[f-11.0.1-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-openbsd-aarch64.txt
+[f-11.0.1-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b11.0.1/files-v11.0.1-openbsd-i686.txt
+[f-10.0.1-freebsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-freebsd-x86_64.txt
+[f-10.0.1-freebsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-freebsd-i686.txt
+[f-10.0.1-netbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-netbsd-x86_64.txt
+[f-10.0.1-netbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-netbsd-aarch64.txt
+[f-10.0.1-netbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-netbsd-i686.txt
+[f-10.0.1-openbsd-x86_64]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-openbsd-x86_64.txt
+[f-10.0.1-openbsd-aarch64]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-openbsd-aarch64.txt
+[f-10.0.1-openbsd-i686]: https://github.com/yasuo-ozu/llvm-full/blob/b10.0.1/files-v10.0.1-openbsd-i686.txt

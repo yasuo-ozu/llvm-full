@@ -15,78 +15,126 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: linux-x86_64
+          # - target: linux-x86_64
+          #   runner: ubuntu-latest
+          #   container: ""
+          #   llvm_targets: "X86"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: linux-aarch64
+          #   runner: ubuntu-24.04-arm
+          #   container: ""
+          #   llvm_targets: "AArch64"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: linux-x86_64-musl
+          #   runner: ubuntu-latest
+          #   container: "alpine:3.21"
+          #   llvm_targets: "X86"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: linux-aarch64-musl
+          #   runner: ubuntu-24.04-arm
+          #   container: "alpine:3.21"
+          #   llvm_targets: "AArch64"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: linux-i686
+          #   runner: ubuntu-latest
+          #   container: "i386/debian:bookworm"
+          #   llvm_targets: "X86"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: macos-aarch64
+          #   runner: macos-latest
+          #   container: ""
+          #   llvm_targets: "X86;AArch64"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: macos-x86_64
+          #   runner: macos-15-intel
+          #   container: ""
+          #   llvm_targets: "X86;AArch64"
+          #   ext: tar.xz
+          #   msys2: ""
+          # - target: windows-msvc
+          #   runner: windows-latest
+          #   container: ""
+          #   llvm_targets: "X86"
+          #   ext: zip
+          #   msys2: ""
+          # - target: windows-aarch64-msvc
+          #   runner: windows-11-arm
+          #   container: ""
+          #   llvm_targets: "AArch64"
+          #   ext: zip
+          #   msys2: ""
+          # - target: windows-i686-msvc
+          #   runner: windows-latest
+          #   container: ""
+          #   llvm_targets: "X86"
+          #   ext: zip
+          #   msys2: ""
+          # - target: windows-gnu
+          #   runner: windows-latest
+          #   container: ""
+          #   llvm_targets: "X86"
+          #   ext: zip
+          #   msys2: "MINGW64"
+          # - target: windows-i686-gnu
+          #   runner: windows-latest
+          #   container: ""
+          #   llvm_targets: "X86"
+          #   ext: zip
+          #   msys2: "MINGW32"
+          - target: freebsd-x86_64
             runner: ubuntu-latest
-            container: ""
+            container: "debian:bookworm"
             llvm_targets: "X86"
             ext: tar.xz
             msys2: ""
-          - target: linux-aarch64
-            runner: ubuntu-24.04-arm
-            container: ""
+          - target: freebsd-i686
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: netbsd-x86_64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: netbsd-aarch64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
             llvm_targets: "AArch64"
             ext: tar.xz
             msys2: ""
-          - target: linux-x86_64-musl
+          - target: netbsd-i686
             runner: ubuntu-latest
-            container: "alpine:3.21"
+            container: "debian:bookworm"
             llvm_targets: "X86"
             ext: tar.xz
             msys2: ""
-          - target: linux-aarch64-musl
-            runner: ubuntu-24.04-arm
-            container: "alpine:3.21"
+          - target: openbsd-x86_64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: openbsd-aarch64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
             llvm_targets: "AArch64"
             ext: tar.xz
             msys2: ""
-          - target: linux-i686
+          - target: openbsd-i686
             runner: ubuntu-latest
-            container: "i386/debian:bookworm"
+            container: "debian:bookworm"
             llvm_targets: "X86"
             ext: tar.xz
             msys2: ""
-          - target: macos-aarch64
-            runner: macos-latest
-            container: ""
-            llvm_targets: "X86;AArch64"
-            ext: tar.xz
-            msys2: ""
-          - target: macos-x86_64
-            runner: macos-15-intel
-            container: ""
-            llvm_targets: "X86;AArch64"
-            ext: tar.xz
-            msys2: ""
-          - target: windows-msvc
-            runner: windows-latest
-            container: ""
-            llvm_targets: "X86"
-            ext: zip
-            msys2: ""
-          - target: windows-aarch64-msvc
-            runner: windows-11-arm
-            container: ""
-            llvm_targets: "AArch64"
-            ext: zip
-            msys2: ""
-          - target: windows-i686-msvc
-            runner: windows-latest
-            container: ""
-            llvm_targets: "X86"
-            ext: zip
-            msys2: ""
-          - target: windows-gnu
-            runner: windows-latest
-            container: ""
-            llvm_targets: "X86"
-            ext: zip
-            msys2: "MINGW64"
-          - target: windows-i686-gnu
-            runner: windows-latest
-            container: ""
-            llvm_targets: "X86"
-            ext: zip
-            msys2: "MINGW32"
 
     steps:
       - uses: actions/checkout@v4
@@ -108,6 +156,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           MAJOR="${{ steps.version.outputs.major }}"
+          TARGET="${{ matrix.target }}"
           LLVM_TARGETS="${{ matrix.llvm_targets }}"
           CONTAINER="${{ matrix.container }}"
 
@@ -121,18 +170,195 @@ jobs:
           elif command -v apt-get > /dev/null 2>&1; then
             apt-get update -qq
             apt-get install -qq -y cmake ninja-build gcc g++ python3 git
+            # BSD cross-compilation targets need clang, lld, and download tools.
+            # Use LLVM 18 from apt.llvm.org (bookworm's clang 14 crashes on some targets).
+            case "$TARGET" in
+              freebsd-*|netbsd-*|openbsd-*)
+                apt-get install -qq -y curl xz-utils lsb-release wget software-properties-common gnupg
+                wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+                echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-18 main" > /etc/apt/sources.list.d/llvm.list
+                apt-get update -qq
+                apt-get install -qq -y clang-18 lld-18
+                ln -sf /usr/bin/clang-18 /usr/local/bin/clang
+                ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
+                ln -sf /usr/bin/lld-18 /usr/local/bin/lld
+                ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
+                ;;
+            esac
           fi
 
           git clone --depth 1 --branch "llvmorg-${VERSION}" \
             https://github.com/llvm/llvm-project /tmp/llvm-project
 
+          # Older LLVM on musl can miss uintptr_t include in Signals.h.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 13 ]; then
+            sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/Support/Signals.h
+          fi
+          # Older LLVM on musl can miss int64_t include in DIPrinter.h.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 12 ]; then
+            sed -i '/^#include <string>$/a #include <cstdint>' /tmp/llvm-project/llvm/include/llvm/DebugInfo/Symbolize/DIPrinter.h
+          fi
+          # Older LLVM on musl can call glibc-specific lseek64.
+          if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 15 ]; then
+            sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
+          fi
+
+          # ── BSD cross-compilation: download sysroot ──
+          BSD_CROSS=false
+          BSD_SYSROOT=""
+          BSD_CMAKE_SYSTEM_NAME=""
+          BSD_HOST_TRIPLE=""
+          case "$TARGET" in
+            freebsd-x86_64)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="FreeBSD"
+              BSD_HOST_TRIPLE="x86_64-unknown-freebsd14.3"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              curl -fsSL "https://download.freebsd.org/releases/amd64/14.3-RELEASE/base.txz" | tar xJf - -C "$BSD_SYSROOT"
+              ;;
+            freebsd-i686)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="FreeBSD"
+              BSD_HOST_TRIPLE="i386-unknown-freebsd13.5"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              curl -fsSL "https://download.freebsd.org/releases/i386/13.5-RELEASE/base.txz" | tar xJf - -C "$BSD_SYSROOT"
+              ;;
+            netbsd-x86_64)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="NetBSD"
+              BSD_HOST_TRIPLE="x86_64-unknown-netbsd10.1"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/binary/sets/${s}.tar.xz" | tar xJf - -C "$BSD_SYSROOT"
+              done
+              ;;
+            netbsd-aarch64)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="NetBSD"
+              BSD_HOST_TRIPLE="aarch64-unknown-netbsd10.1"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/evbarm-aarch64/binary/sets/${s}.tar.xz" | tar xJf - -C "$BSD_SYSROOT"
+              done
+              ;;
+            netbsd-i686)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="NetBSD"
+              BSD_HOST_TRIPLE="i386-unknown-netbsd10.1"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/i386/binary/sets/${s}.tgz" | tar xzf - -C "$BSD_SYSROOT"
+              done
+              ;;
+            openbsd-x86_64)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="OpenBSD"
+              BSD_HOST_TRIPLE="x86_64-unknown-openbsd7.7"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/amd64/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+              done
+              ;;
+            openbsd-aarch64)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="OpenBSD"
+              BSD_HOST_TRIPLE="aarch64-unknown-openbsd7.7"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/arm64/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+              done
+              ;;
+            openbsd-i686)
+              BSD_CROSS=true
+              BSD_CMAKE_SYSTEM_NAME="OpenBSD"
+              BSD_HOST_TRIPLE="i386-unknown-openbsd7.7"
+              BSD_SYSROOT="/tmp/bsd-sysroot"
+              mkdir -p "$BSD_SYSROOT"
+              for s in base comp; do
+                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/i386/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+              done
+              ;;
+          esac
+
+          # ── BSD cross-compilation: build native tablegen ──
+          if [ "$BSD_CROSS" = "true" ]; then
+            cmake -S /tmp/llvm-project/llvm -B /tmp/llvm-native -G Ninja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DLLVM_ENABLE_PROJECTS="clang" \
+              -DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS}"
+            cmake --build /tmp/llvm-native --target llvm-tblgen clang-tblgen --parallel
+          fi
+
           cmake_args=""
           if [ "${MAJOR}" -le 11 ]; then
             cmake_args="-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
           fi
+          cmake_extra_args=""
+          extra_flags=""
+
+          # ── BSD cross-compilation flags ──
+          bsd_cmake_args=""
+          if [ "$BSD_CROSS" = "true" ]; then
+            bsd_cmake_args="-DCMAKE_C_COMPILER=clang"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_CXX_COMPILER=clang++"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_SYSTEM_NAME=$BSD_CMAKE_SYSTEM_NAME"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_SYSROOT=$BSD_SYSROOT"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_FIND_ROOT_PATH=$BSD_SYSROOT"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+            bsd_cmake_args="$bsd_cmake_args -DLLVM_TABLEGEN=/tmp/llvm-native/bin/llvm-tblgen"
+            bsd_cmake_args="$bsd_cmake_args -DCLANG_TABLEGEN=/tmp/llvm-native/bin/clang-tblgen"
+            bsd_cmake_args="$bsd_cmake_args -DLLVM_HOST_TRIPLE=$BSD_HOST_TRIPLE"
+            bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_ZLIB=OFF"
+            bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_LIBXML2=OFF"
+            bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_ZSTD=OFF"
+            # Use -fuse-ld=lld in flags instead of LLVM_USE_LINKER (the configure
+            # test for LLVM_USE_LINKER fails when cross-compiling with sysroot)
+            extra_flags="$extra_flags --target=$BSD_HOST_TRIPLE --sysroot=$BSD_SYSROOT -fuse-ld=lld"
+            # Tell the linker where to find libraries in the sysroot
+            bsd_linker_flags="-L${BSD_SYSROOT}/usr/lib"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_EXE_LINKER_FLAGS=$bsd_linker_flags"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_SHARED_LINKER_FLAGS=$bsd_linker_flags"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_MODULE_LINKER_FLAGS=$bsd_linker_flags"
+            # NetBSD uses libstdc++; FreeBSD/OpenBSD use libc++ (system default)
+            case "$TARGET" in
+              netbsd-*)
+                bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_LIBCXX=OFF"
+                extra_flags="$extra_flags -stdlib=libstdc++"
+                ;;
+              *)
+                # Don't pass -stdlib=libc++ explicitly; let clang use the target default
+                # to avoid duplicate symbol issues with the sysroot's bundled libc++
+                ;;
+            esac
+            # i686 cross targets need libatomic disabled (not in sysroot)
+            case "$TARGET" in
+              *-i686)
+                bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON"
+                ;;
+            esac
+            # OpenBSD has no separate librt
+            case "$TARGET" in
+              openbsd-*)
+                bsd_cmake_args="$bsd_cmake_args -DHAVE_LIBRT=OFF"
+                ;;
+            esac
+          fi
 
           cmake -S /tmp/llvm-project/llvm -B /tmp/llvm-build -G Ninja \
             $cmake_args \
+            $cmake_extra_args \
+            $bsd_cmake_args \
+            -DCMAKE_C_FLAGS="$extra_flags" \
+            -DCMAKE_CXX_FLAGS="$extra_flags" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/runner-temp/llvm-install \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
@@ -146,6 +372,7 @@ jobs:
             -v "$RUNNER_TEMP:/runner-temp" \
             -e VERSION="$VERSION" \
             -e MAJOR="$MAJOR" \
+            -e TARGET="$TARGET" \
             -e LLVM_TARGETS="$LLVM_TARGETS" \
             "$CONTAINER" \
             sh /runner-temp/docker-build.sh
@@ -456,10 +683,19 @@ jobs:
         shell: bash
         run: |
           PREFIX="$RUNNER_TEMP/llvm-install"
+          TARGET="${{ matrix.target }}"
           if [ "${{ runner.os }}" = "Windows" ]; then
             test -f "$PREFIX/bin/clang.exe" || { echo "clang.exe not found"; exit 1; }
           else
-            test -x "$PREFIX/bin/llvm-config" || { echo "llvm-config not found"; exit 1; }
+            # BSD cross-compiled binaries aren't executable on the build host
+            case "$TARGET" in
+              freebsd-*|netbsd-*|openbsd-*)
+                test -f "$PREFIX/bin/llvm-config" || { echo "llvm-config not found"; exit 1; }
+                ;;
+              *)
+                test -x "$PREFIX/bin/llvm-config" || { echo "llvm-config not found"; exit 1; }
+                ;;
+            esac
           fi
           test -f "$PREFIX/include/llvm-c/Types.h" || { echo "LLVM C API headers not found"; exit 1; }
           echo "LLVM installation verified"
@@ -510,71 +746,84 @@ jobs:
           name: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}
           path: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}.txt
 
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Parse version
-        id: version
-        run: |
-          VERSION="${GITHUB_REF_NAME#b}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Collect release assets
-        run: |
-          mkdir -p release-assets
-          find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' -o -name 'files-*.txt' \) -exec cp {} release-assets/ \;
-          ls -la release-assets/
-
-      - name: Commit file lists
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          find artifacts -name 'files-*.txt' -exec cp {} . \;
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add files-*.txt
-          git diff --cached --quiet && echo "No changes to commit" || \
-            git commit -m "Add file lists for v${VERSION}"
-          git push
-
-      - name: Force update version tag
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          git tag -f "v${VERSION}"
-          git push -f origin "v${VERSION}"
-
-      - name: Create or update GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: LLVM ${{ steps.version.outputs.version }}
-          body: |
-            Prebuilt LLVM ${{ steps.version.outputs.version }} archives with full API and clang.
-
-            ## Archives
-            | Target | Archive | Files |
-            |--------|---------|-------|
-            | Linux x86_64 | `llvm-${{ steps.version.outputs.version }}-linux-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64.txt) |
-            | Linux AArch64 | `llvm-${{ steps.version.outputs.version }}-linux-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64.txt) |
-            | Linux x86_64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-x86_64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64-musl.txt) |
-            | Linux AArch64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-aarch64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64-musl.txt) |
-            | Linux i686 | `llvm-${{ steps.version.outputs.version }}-linux-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-i686.txt) |
-            | macOS ARM64 | `llvm-${{ steps.version.outputs.version }}-macos-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-aarch64.txt) |
-            | macOS Intel | `llvm-${{ steps.version.outputs.version }}-macos-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-x86_64.txt) |
-            | Windows x64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-msvc.txt) |
-            | Windows x64 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-gnu.txt) |
-            | Windows ARM64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-aarch64-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-aarch64-msvc.txt) |
-            | Windows i686 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-i686-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-msvc.txt) |
-            | Windows i686 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-i686-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-gnu.txt) |
-          files: release-assets/*
-          draft: false
-          prerelease: false
+  # release:
+  #   name: Create Release
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     - name: Parse version
+  #       id: version
+  #       run: |
+  #         VERSION="${GITHUB_REF_NAME#b}"
+  #         echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+  #
+  #     - name: Download all artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: artifacts
+  #
+  #     - name: Collect release assets
+  #       run: |
+  #         mkdir -p release-assets
+  #         find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' -o -name 'files-*.txt' \) -exec cp {} release-assets/ \;
+  #         ls -la release-assets/
+  #
+  #     - name: Commit file lists
+  #       run: |
+  #         VERSION="${{ steps.version.outputs.version }}"
+  #         BRANCH="${GITHUB_REF_NAME}"
+  #         find artifacts -name 'files-*.txt' -exec cp {} . \;
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+  #         git add files-*.txt
+  #         if git diff --cached --quiet; then
+  #           echo "No changes to commit"
+  #         else
+  #           git commit -m "Add file lists for v${VERSION}"
+  #           git pull --rebase origin "${BRANCH}"
+  #           git push origin "HEAD:${BRANCH}"
+  #         fi
+  #
+  #     - name: Force update version tag
+  #       run: |
+  #         VERSION="${{ steps.version.outputs.version }}"
+  #         git tag -f "v${VERSION}"
+  #         git push -f origin "v${VERSION}"
+  #
+  #     - name: Create or update GitHub Release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         tag_name: v${{ steps.version.outputs.version }}
+  #         name: LLVM ${{ steps.version.outputs.version }}
+  #         body: |
+  #           Prebuilt LLVM ${{ steps.version.outputs.version }} archives with full API and clang.
+  #
+  #           ## Archives
+  #           | Target | Archive | Files |
+  #           |--------|---------|-------|
+  #           | Linux x86_64 | `llvm-${{ steps.version.outputs.version }}-linux-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64.txt) |
+  #           | Linux AArch64 | `llvm-${{ steps.version.outputs.version }}-linux-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64.txt) |
+  #           | Linux x86_64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-x86_64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64-musl.txt) |
+  #           | Linux AArch64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-aarch64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64-musl.txt) |
+  #           | Linux i686 | `llvm-${{ steps.version.outputs.version }}-linux-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-i686.txt) |
+  #           | macOS ARM64 | `llvm-${{ steps.version.outputs.version }}-macos-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-aarch64.txt) |
+  #           | macOS Intel | `llvm-${{ steps.version.outputs.version }}-macos-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-x86_64.txt) |
+  #           | Windows x64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-msvc.txt) |
+  #           | Windows x64 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-gnu.txt) |
+  #           | Windows ARM64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-aarch64-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-aarch64-msvc.txt) |
+  #           | Windows i686 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-i686-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-msvc.txt) |
+  #           | Windows i686 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-i686-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-gnu.txt) |
+  #           | FreeBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-freebsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-x86_64.txt) |
+  #           | FreeBSD i686 | `llvm-${{ steps.version.outputs.version }}-freebsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-i686.txt) |
+  #           | NetBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-netbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-x86_64.txt) |
+  #           | NetBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-netbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-aarch64.txt) |
+  #           | NetBSD i686 | `llvm-${{ steps.version.outputs.version }}-netbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-i686.txt) |
+  #           | OpenBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-openbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-x86_64.txt) |
+  #           | OpenBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-openbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-aarch64.txt) |
+  #           | OpenBSD i686 | `llvm-${{ steps.version.outputs.version }}-openbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-i686.txt) |
+  #         files: release-assets/*
+  #         draft: false
+  #         prerelease: false

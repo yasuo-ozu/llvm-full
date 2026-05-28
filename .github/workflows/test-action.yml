@@ -1,0 +1,255 @@
+name: Test Action
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: ${{ matrix.version }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "10.0.1"
+          - "11.0.1"
+          - "12.0.1"
+          - "13.0.1"
+          - "14.0.6"
+          - "15.0.7"
+          - "16.0.6"
+          - "17.0.6"
+          - "18.1.8"
+          - "19.1.7"
+          - "20.1.8"
+          - "21.1.4"
+          - "22.1.0"
+        target:
+          # - linux-x86_64
+          # - linux-aarch64
+          # - linux-x86_64-musl
+          # - linux-aarch64-musl
+          # - linux-i686
+          # - macos-aarch64
+          # - macos-x86_64
+          # - windows-msvc
+          # - windows-gnu
+          # - windows-aarch64-msvc
+          # - windows-i686-msvc
+          # - windows-i686-gnu
+          - freebsd-x86_64
+          - freebsd-i686
+          - netbsd-x86_64
+          - netbsd-aarch64
+          - netbsd-i686
+          - openbsd-x86_64
+          - openbsd-aarch64
+          - openbsd-i686
+        include:
+          # - target: linux-x86_64
+          #   runner: ubuntu-latest
+          # - target: linux-aarch64
+          #   runner: ubuntu-24.04-arm
+          # - target: linux-x86_64-musl
+          #   runner: ubuntu-latest
+          # - target: linux-aarch64-musl
+          #   runner: ubuntu-24.04-arm
+          # - target: linux-i686
+          #   runner: ubuntu-latest
+          # - target: macos-aarch64
+          #   runner: macos-latest
+          # - target: macos-x86_64
+          #   runner: macos-15-intel
+          # - target: windows-msvc
+          #   runner: windows-latest
+          # - target: windows-gnu
+          #   runner: windows-latest
+          # - target: windows-aarch64-msvc
+          #   runner: windows-11-arm
+          # - target: windows-i686-msvc
+          #   runner: windows-latest
+          # - target: windows-i686-gnu
+          #   runner: windows-latest
+          - target: freebsd-x86_64
+            runner: ubuntu-latest
+          - target: freebsd-i686
+            runner: ubuntu-latest
+          - target: netbsd-x86_64
+            runner: ubuntu-latest
+          - target: netbsd-aarch64
+            runner: ubuntu-latest
+          - target: netbsd-i686
+            runner: ubuntu-latest
+          - target: openbsd-x86_64
+            runner: ubuntu-latest
+          - target: openbsd-aarch64
+            runner: ubuntu-latest
+          - target: openbsd-i686
+            runner: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Install LLVM via the action ───────────────────────────────
+      - name: Install LLVM
+        id: llvm
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+          target: ${{ matrix.target }}
+          fallback: "false"
+
+      # ── Verify llvm-config and all components ─────────────────────
+      - name: Verify llvm-config and components
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          CONFIG="${LLVM_CONFIG:-}"
+          if [ -z "$CONFIG" ]; then
+            if command -v llvm-config >/dev/null 2>&1; then
+              CONFIG="llvm-config"
+            elif command -v llvm-config.exe >/dev/null 2>&1; then
+              CONFIG="llvm-config.exe"
+            else
+              echo "::error::llvm-config not found in PATH or LLVM_CONFIG"
+              exit 1
+            fi
+          fi
+
+          echo "llvm-config: $CONFIG"
+          echo "Target: $TARGET"
+
+          # Determine if this is a cross-target scenario where the binary
+          # may not be executable on the host runner.
+          cross_target=false
+          case "$TARGET" in
+            *-musl)         cross_target=true ;;  # musl binary on glibc host
+            linux-i686)     cross_target=true ;;  # i686 binary on x86_64 host
+            windows-i686-*) cross_target=true ;;  # i686 binary on x86_64 host
+            windows-gnu)    cross_target=true ;;  # MinGW binary may lack runtime DLLs
+            freebsd-*)      cross_target=true ;;  # BSD binary on Linux host
+            netbsd-*)       cross_target=true ;;  # BSD binary on Linux host
+            openbsd-*)      cross_target=true ;;  # BSD binary on Linux host
+          esac
+
+          # Check that llvm-config is actually runnable
+          if version=$("$CONFIG" --version 2>&1); then
+            echo "LLVM version: $version"
+          elif [ "$cross_target" = "true" ]; then
+            echo "Cross-target binary not directly runnable on host (expected for $TARGET)"
+            # Resolve the binary path
+            config_path="$(command -v "$CONFIG" 2>/dev/null || echo "$CONFIG")"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              config_path="$(cygpath -u "$config_path" 2>/dev/null || echo "$config_path")"
+            fi
+            if [ ! -f "$config_path" ]; then
+              echo "::error::llvm-config binary not found at: $config_path"
+              exit 1
+            fi
+            echo "llvm-config binary: $config_path ($(wc -c < "$config_path") bytes)"
+            file "$config_path" 2>/dev/null || true
+
+            # Verify key directories and headers exist instead
+            prefix="${LLVM_PREFIX:-}"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              prefix="$(cygpath -u "$prefix" 2>/dev/null || echo "$prefix")"
+            fi
+            echo "Verifying installation at $prefix..."
+            for d in bin include lib; do
+              if [ ! -d "$prefix/$d" ]; then
+                echo "::error::Missing directory: $prefix/$d"
+                exit 1
+              fi
+            done
+            for h in "llvm-c/Types.h" "llvm-c/TargetMachine.h"; do
+              if [ ! -f "$prefix/include/$h" ]; then
+                echo "::warning::Missing header: $h"
+              fi
+            done
+
+            # Verify library directory has files
+            libdir="$prefix/lib"
+            lib_count=$(find "$libdir" -maxdepth 1 -name '*.a' -o -name '*.so' -o -name '*.lib' -o -name '*.dylib' 2>/dev/null | wc -l)
+            echo "Library files in $libdir: $lib_count"
+            if [ "$lib_count" -eq 0 ]; then
+              echo "::error::No library files found in $libdir"
+              exit 1
+            fi
+            echo "Cross-target file verification passed."
+            exit 0
+          else
+            echo "::error::llvm-config found but not runnable"
+            echo "Output: $version"
+            config_full="$(command -v "$CONFIG" 2>/dev/null || echo "$CONFIG")"
+            if [ "$RUNNER_OS" = "Windows" ]; then
+              config_full_w="$(cygpath -u "$config_full" 2>/dev/null || echo "$config_full")"
+              echo "--- file ---"
+              file "$config_full_w" 2>&1 || true
+              echo "--- PATH (LLVM/MinGW entries) ---"
+              echo "$PATH" | tr ':' '\n' | grep -iE 'llvm|mingw|msys' || echo "(none)"
+            else
+              echo "--- ldd ---"
+              ldd "$config_full" 2>&1 || true
+              echo "--- file ---"
+              file "$config_full" 2>&1 || true
+              echo "--- LD_LIBRARY_PATH ---"
+              echo "${LD_LIBRARY_PATH:-not set}"
+            fi
+            exit 1
+          fi
+
+          # List all components
+          components=$("$CONFIG" --components)
+          echo "Components: $components"
+          count=$(echo "$components" | wc -w)
+          echo "Component count: $count"
+
+          if [ "$count" -lt 5 ]; then
+            echo "::error::Too few components ($count)"
+            exit 1
+          fi
+
+          # Verify core components exist
+          for comp in core support analysis; do
+            if ! echo " $components " | grep -q " $comp "; then
+              echo "::error::Missing core component: $comp"
+              exit 1
+            fi
+          done
+
+          # Verify library files exist for every component
+          # Use --libdir + --libnames instead of --libfiles to avoid
+          # word-splitting on Windows paths with spaces (e.g. C:\Program Files\...)
+          missing=0
+          libdir=$("$CONFIG" --libdir 2>/dev/null) || libdir=""
+          if [ "$RUNNER_OS" = "Windows" ] && [ -n "$libdir" ]; then
+            libdir="$(cygpath -u "$libdir" 2>/dev/null || echo "$libdir")"
+          fi
+          # Fall back to LLVM_LIBRARY_DIR if llvm-config reports a stale prefix
+          if [ -n "$libdir" ] && [ ! -d "$libdir" ]; then
+            fallback="${LLVM_LIBRARY_DIR:-}"
+            if [ "$RUNNER_OS" = "Windows" ] && [ -n "$fallback" ]; then
+              fallback="$(cygpath -u "$fallback" 2>/dev/null || echo "$fallback")"
+            fi
+            if [ -d "$fallback" ]; then
+              libdir="$fallback"
+            fi
+          fi
+          for comp in $components; do
+            names=$("$CONFIG" --libnames "$comp" 2>/dev/null) || continue
+            for name in $names; do
+              if [ ! -f "$libdir/$name" ]; then
+                echo "::warning::Missing library for $comp: $name"
+                missing=$((missing + 1))
+              fi
+            done
+          done
+
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::$missing library file(s) missing"
+            exit 1
+          fi
+
+          echo "All $count components verified."
