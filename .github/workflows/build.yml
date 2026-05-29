@@ -204,6 +204,17 @@ jobs:
           fi
 
           # ── BSD cross-compilation: download sysroot ──
+          # Helper: download URL to a file with retries, then extract.
+          # Piped (curl | tar) downloads can't retry mid-stream and OpenBSD's
+          # CDN sometimes drops HTTP/2 streams. Use --http1.1 + retries.
+          fetch_and_extract() {
+            url="$1"; sysroot="$2"; mode="$3"  # mode: J (xz) or z (gz)
+            tmp="/tmp/bsd-download.tar"
+            curl -fsSL --http1.1 --retry 8 --retry-all-errors --retry-delay 5 --max-time 900 \
+              "$url" -o "$tmp"
+            tar "x${mode}f" "$tmp" -C "$sysroot"
+            rm -f "$tmp"
+          }
           BSD_CROSS=false
           BSD_SYSROOT=""
           BSD_CMAKE_SYSTEM_NAME=""
@@ -215,7 +226,7 @@ jobs:
               BSD_HOST_TRIPLE="x86_64-unknown-freebsd14.3"
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
-              curl -fsSL "https://download.freebsd.org/releases/amd64/14.3-RELEASE/base.txz" | tar xJf - -C "$BSD_SYSROOT"
+              fetch_and_extract "https://download.freebsd.org/releases/amd64/14.3-RELEASE/base.txz" "$BSD_SYSROOT" J
               ;;
             freebsd-i686)
               BSD_CROSS=true
@@ -223,7 +234,7 @@ jobs:
               BSD_HOST_TRIPLE="i386-unknown-freebsd13.5"
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
-              curl -fsSL "https://download.freebsd.org/releases/i386/13.5-RELEASE/base.txz" | tar xJf - -C "$BSD_SYSROOT"
+              fetch_and_extract "https://download.freebsd.org/releases/i386/13.5-RELEASE/base.txz" "$BSD_SYSROOT" J
               ;;
             netbsd-x86_64)
               BSD_CROSS=true
@@ -232,7 +243,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/binary/sets/${s}.tar.xz" | tar xJf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/amd64/binary/sets/${s}.tar.xz" "$BSD_SYSROOT" J
               done
               ;;
             netbsd-aarch64)
@@ -242,7 +253,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/evbarm-aarch64/binary/sets/${s}.tar.xz" | tar xJf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/evbarm-aarch64/binary/sets/${s}.tar.xz" "$BSD_SYSROOT" J
               done
               ;;
             netbsd-i686)
@@ -252,7 +263,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/i386/binary/sets/${s}.tgz" | tar xzf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.1/i386/binary/sets/${s}.tgz" "$BSD_SYSROOT" z
               done
               ;;
             openbsd-x86_64)
@@ -262,7 +273,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/amd64/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.openbsd.org/pub/OpenBSD/7.7/amd64/${s}77.tgz" "$BSD_SYSROOT" z
               done
               ;;
             openbsd-aarch64)
@@ -272,7 +283,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/arm64/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.openbsd.org/pub/OpenBSD/7.7/arm64/${s}77.tgz" "$BSD_SYSROOT" z
               done
               ;;
             openbsd-i686)
@@ -282,7 +293,7 @@ jobs:
               BSD_SYSROOT="/tmp/bsd-sysroot"
               mkdir -p "$BSD_SYSROOT"
               for s in base comp; do
-                curl -fsSL "https://cdn.openbsd.org/pub/OpenBSD/7.7/i386/${s}77.tgz" | tar xzf - -C "$BSD_SYSROOT"
+                fetch_and_extract "https://cdn.openbsd.org/pub/OpenBSD/7.7/i386/${s}77.tgz" "$BSD_SYSROOT" z
               done
               ;;
           esac
@@ -346,24 +357,13 @@ jobs:
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON"
                 ;;
             esac
-            # NetBSD i686 needs libatomic for 64-bit atomics (GCC runtime).
-            # libatomic lives in a GCC-specific path on NetBSD, not /usr/lib.
+            # NetBSD i686: libatomic isn't shipped in the comp set, so we
+            # force inline 64-bit atomics via cmpxchg8b by raising -march to
+            # i586 (cmpxchg8b) — i486 default would still emit __atomic_load_8.
             case "$TARGET" in
               netbsd-i686)
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON"
-                atomic_path=$(find "$BSD_SYSROOT" -name 'libatomic.a' 2>/dev/null | head -1)
-                if [ -z "$atomic_path" ]; then
-                  atomic_path=$(find "$BSD_SYSROOT" -name 'libatomic*' 2>/dev/null | head -1)
-                fi
-                if [ -n "$atomic_path" ]; then
-                  atomic_dir=$(dirname "$atomic_path")
-                  echo "Found libatomic at: $atomic_path"
-                  bsd_linker_flags="$bsd_linker_flags -L$atomic_dir -latomic"
-                else
-                  echo "WARNING: libatomic not found in $BSD_SYSROOT"
-                  find "$BSD_SYSROOT" -name 'lib*atomic*' 2>/dev/null || true
-                  find "$BSD_SYSROOT" -name 'libgcc*' 2>/dev/null | head -5 || true
-                fi
+                extra_flags="$extra_flags -march=i586"
                 ;;
             esac
             # OpenBSD has no separate librt; also work around duplicate libc++
