@@ -322,8 +322,11 @@ jobs:
             bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_LIBXML2=OFF"
             bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_ZSTD=OFF"
             # Use -fuse-ld=lld in flags instead of LLVM_USE_LINKER (the configure
-            # test for LLVM_USE_LINKER fails when cross-compiling with sysroot)
-            extra_flags="$extra_flags --target=$BSD_HOST_TRIPLE --sysroot=$BSD_SYSROOT -fuse-ld=lld"
+            # test for LLVM_USE_LINKER fails when cross-compiling with sysroot).
+            # -fPIC is required because BSDs default to PIE executables and the
+            # newer clang (18+) cross-compilers enforce that linkage strictly.
+            extra_flags="$extra_flags --target=$BSD_HOST_TRIPLE --sysroot=$BSD_SYSROOT -fuse-ld=lld -fPIC"
+            bsd_cmake_args="$bsd_cmake_args -DCMAKE_POSITION_INDEPENDENT_CODE=ON"
             # Build linker flags: start with sysroot lib dir
             bsd_linker_flags="-L${BSD_SYSROOT}/usr/lib"
             # NetBSD uses libstdc++; FreeBSD/OpenBSD use libc++ (system default)
