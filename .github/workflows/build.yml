@@ -368,13 +368,17 @@ jobs:
             esac
             # OpenBSD has no separate librt; also work around duplicate libc++
             # symbols from libexecinfo.a in the sysroot. OpenBSD ships
-            # libc++abi.a as a non-PIC archive, so we can't link it into
-            # libclang-cpp.so — disable that shared library target instead.
+            # libc++abi.a as a non-PIC archive, so we can't link any shared
+            # libraries against it — disable all .so/.dylib targets:
+            # clang-shlib, libLLVM dylib, examples, plugins, loadable modules.
             case "$TARGET" in
               openbsd-*)
                 bsd_cmake_args="$bsd_cmake_args -DHAVE_LIBRT=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DCLANG_TOOL_CLANG_SHLIB_BUILD=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_LINK_LLVM_DYLIB=OFF"
+                bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_PLUGINS=OFF"
+                bsd_cmake_args="$bsd_cmake_args -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_BUILD_EXAMPLES=OFF"
+                bsd_cmake_args="$bsd_cmake_args -DCLANG_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF"
                 bsd_linker_flags="$bsd_linker_flags -Wl,--allow-multiple-definition"
                 ;;
             esac
