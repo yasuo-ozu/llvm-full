@@ -379,6 +379,9 @@ jobs:
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_PLUGINS=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_BUILD_EXAMPLES=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DCLANG_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF"
+                # OpenBSD binaries built by lld don't have ELF RPATH/RUNPATH
+                # entries, so CMake's install-time rpath rewrite fails. Skip it.
+                bsd_cmake_args="$bsd_cmake_args -DCMAKE_SKIP_INSTALL_RPATH=ON -DCMAKE_SKIP_RPATH=ON"
                 bsd_linker_flags="$bsd_linker_flags -Wl,--allow-multiple-definition"
                 ;;
             esac
