@@ -171,18 +171,18 @@ jobs:
             apt-get update -qq
             apt-get install -qq -y cmake ninja-build gcc g++ python3 git
             # BSD cross-compilation targets need clang, lld, and download tools.
-            # Use LLVM 19 from apt.llvm.org (bookworm's clang 14 crashes on some targets).
+            # Use LLVM 20 from apt.llvm.org (bookworm's clang 14 crashes on some targets).
             case "$TARGET" in
               freebsd-*|netbsd-*|openbsd-*)
                 apt-get install -qq -y curl xz-utils lsb-release wget software-properties-common gnupg
                 wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-                echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-19 main" > /etc/apt/sources.list.d/llvm.list
+                echo "deb http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-20 main" > /etc/apt/sources.list.d/llvm.list
                 apt-get update -qq
-                apt-get install -qq -y clang-19 lld-19
-                ln -sf /usr/bin/clang-19 /usr/local/bin/clang
-                ln -sf /usr/bin/clang++-19 /usr/local/bin/clang++
-                ln -sf /usr/bin/lld-19 /usr/local/bin/lld
-                ln -sf /usr/bin/ld.lld-19 /usr/local/bin/ld.lld
+                apt-get install -qq -y clang-20 lld-20
+                ln -sf /usr/bin/clang-20 /usr/local/bin/clang
+                ln -sf /usr/bin/clang++-20 /usr/local/bin/clang++
+                ln -sf /usr/bin/lld-20 /usr/local/bin/lld
+                ln -sf /usr/bin/ld.lld-20 /usr/local/bin/ld.lld
                 ;;
             esac
           fi
@@ -343,11 +343,24 @@ jobs:
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON"
                 ;;
             esac
-            # NetBSD i686 needs libatomic for 64-bit atomics (GCC runtime)
+            # NetBSD i686 needs libatomic for 64-bit atomics (GCC runtime).
+            # libatomic lives in a GCC-specific path on NetBSD, not /usr/lib.
             case "$TARGET" in
               netbsd-i686)
-                bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON"
-                bsd_linker_flags="$bsd_linker_flags -latomic"
+                bsd_cmake_args="$bsd_cmake_args -DLLVM_HAS_ATOMICS=ON -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=ON"
+                atomic_path=$(find "$BSD_SYSROOT" -name 'libatomic.a' 2>/dev/null | head -1)
+                if [ -z "$atomic_path" ]; then
+                  atomic_path=$(find "$BSD_SYSROOT" -name 'libatomic*' 2>/dev/null | head -1)
+                fi
+                if [ -n "$atomic_path" ]; then
+                  atomic_dir=$(dirname "$atomic_path")
+                  echo "Found libatomic at: $atomic_path"
+                  bsd_linker_flags="$bsd_linker_flags -L$atomic_dir -latomic"
+                else
+                  echo "WARNING: libatomic not found in $BSD_SYSROOT"
+                  find "$BSD_SYSROOT" -name 'lib*atomic*' 2>/dev/null || true
+                  find "$BSD_SYSROOT" -name 'libgcc*' 2>/dev/null | head -5 || true
+                fi
                 ;;
             esac
             # OpenBSD has no separate librt; also work around duplicate libc++
