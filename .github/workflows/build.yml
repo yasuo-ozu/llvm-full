@@ -15,78 +15,78 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - target: linux-x86_64
-          #   runner: ubuntu-latest
-          #   container: ""
-          #   llvm_targets: "X86"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: linux-aarch64
-          #   runner: ubuntu-24.04-arm
-          #   container: ""
-          #   llvm_targets: "AArch64"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: linux-x86_64-musl
-          #   runner: ubuntu-latest
-          #   container: "alpine:3.21"
-          #   llvm_targets: "X86"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: linux-aarch64-musl
-          #   runner: ubuntu-24.04-arm
-          #   container: "alpine:3.21"
-          #   llvm_targets: "AArch64"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: linux-i686
-          #   runner: ubuntu-latest
-          #   container: "i386/debian:bookworm"
-          #   llvm_targets: "X86"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: macos-aarch64
-          #   runner: macos-latest
-          #   container: ""
-          #   llvm_targets: "X86;AArch64"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: macos-x86_64
-          #   runner: macos-15-intel
-          #   container: ""
-          #   llvm_targets: "X86;AArch64"
-          #   ext: tar.xz
-          #   msys2: ""
-          # - target: windows-msvc
-          #   runner: windows-latest
-          #   container: ""
-          #   llvm_targets: "X86"
-          #   ext: zip
-          #   msys2: ""
-          # - target: windows-aarch64-msvc
-          #   runner: windows-11-arm
-          #   container: ""
-          #   llvm_targets: "AArch64"
-          #   ext: zip
-          #   msys2: ""
-          # - target: windows-i686-msvc
-          #   runner: windows-latest
-          #   container: ""
-          #   llvm_targets: "X86"
-          #   ext: zip
-          #   msys2: ""
-          # - target: windows-gnu
-          #   runner: windows-latest
-          #   container: ""
-          #   llvm_targets: "X86"
-          #   ext: zip
-          #   msys2: "MINGW64"
-          # - target: windows-i686-gnu
-          #   runner: windows-latest
-          #   container: ""
-          #   llvm_targets: "X86"
-          #   ext: zip
-          #   msys2: "MINGW32"
+          - target: linux-x86_64
+            runner: ubuntu-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+            container: ""
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-x86_64-musl
+            runner: ubuntu-latest
+            container: "alpine:3.21"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-aarch64-musl
+            runner: ubuntu-24.04-arm
+            container: "alpine:3.21"
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-i686
+            runner: ubuntu-latest
+            container: "i386/debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: macos-aarch64
+            runner: macos-latest
+            container: ""
+            llvm_targets: "X86;AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: macos-x86_64
+            runner: macos-15-intel
+            container: ""
+            llvm_targets: "X86;AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: windows-msvc
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: ""
+          - target: windows-aarch64-msvc
+            runner: windows-11-arm
+            container: ""
+            llvm_targets: "AArch64"
+            ext: zip
+            msys2: ""
+          - target: windows-i686-msvc
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: ""
+          - target: windows-gnu
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: "MINGW64"
+          - target: windows-i686-gnu
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: "MINGW32"
           - target: freebsd-x86_64
             runner: ubuntu-latest
             container: "debian:bookworm"
@@ -785,84 +785,84 @@ jobs:
           name: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}
           path: files-v${{ steps.version.outputs.version }}-${{ matrix.target }}.txt
 
-  # release:
-  #   name: Create Release
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Parse version
-  #       id: version
-  #       run: |
-  #         VERSION="${GITHUB_REF_NAME#b}"
-  #         echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-  #
-  #     - name: Download all artifacts
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         path: artifacts
-  #
-  #     - name: Collect release assets
-  #       run: |
-  #         mkdir -p release-assets
-  #         find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' -o -name 'files-*.txt' \) -exec cp {} release-assets/ \;
-  #         ls -la release-assets/
-  #
-  #     - name: Commit file lists
-  #       run: |
-  #         VERSION="${{ steps.version.outputs.version }}"
-  #         BRANCH="${GITHUB_REF_NAME}"
-  #         find artifacts -name 'files-*.txt' -exec cp {} . \;
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-  #         git add files-*.txt
-  #         if git diff --cached --quiet; then
-  #           echo "No changes to commit"
-  #         else
-  #           git commit -m "Add file lists for v${VERSION}"
-  #           git pull --rebase origin "${BRANCH}"
-  #           git push origin "HEAD:${BRANCH}"
-  #         fi
-  #
-  #     - name: Force update version tag
-  #       run: |
-  #         VERSION="${{ steps.version.outputs.version }}"
-  #         git tag -f "v${VERSION}"
-  #         git push -f origin "v${VERSION}"
-  #
-  #     - name: Create or update GitHub Release
-  #       uses: softprops/action-gh-release@v2
-  #       with:
-  #         tag_name: v${{ steps.version.outputs.version }}
-  #         name: LLVM ${{ steps.version.outputs.version }}
-  #         body: |
-  #           Prebuilt LLVM ${{ steps.version.outputs.version }} archives with full API and clang.
-  #
-  #           ## Archives
-  #           | Target | Archive | Files |
-  #           |--------|---------|-------|
-  #           | Linux x86_64 | `llvm-${{ steps.version.outputs.version }}-linux-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64.txt) |
-  #           | Linux AArch64 | `llvm-${{ steps.version.outputs.version }}-linux-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64.txt) |
-  #           | Linux x86_64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-x86_64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64-musl.txt) |
-  #           | Linux AArch64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-aarch64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64-musl.txt) |
-  #           | Linux i686 | `llvm-${{ steps.version.outputs.version }}-linux-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-i686.txt) |
-  #           | macOS ARM64 | `llvm-${{ steps.version.outputs.version }}-macos-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-aarch64.txt) |
-  #           | macOS Intel | `llvm-${{ steps.version.outputs.version }}-macos-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-x86_64.txt) |
-  #           | Windows x64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-msvc.txt) |
-  #           | Windows x64 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-gnu.txt) |
-  #           | Windows ARM64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-aarch64-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-aarch64-msvc.txt) |
-  #           | Windows i686 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-i686-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-msvc.txt) |
-  #           | Windows i686 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-i686-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-gnu.txt) |
-  #           | FreeBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-freebsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-x86_64.txt) |
-  #           | FreeBSD i686 | `llvm-${{ steps.version.outputs.version }}-freebsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-i686.txt) |
-  #           | NetBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-netbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-x86_64.txt) |
-  #           | NetBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-netbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-aarch64.txt) |
-  #           | NetBSD i686 | `llvm-${{ steps.version.outputs.version }}-netbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-i686.txt) |
-  #           | OpenBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-openbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-x86_64.txt) |
-  #           | OpenBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-openbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-aarch64.txt) |
-  #           | OpenBSD i686 | `llvm-${{ steps.version.outputs.version }}-openbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-i686.txt) |
-  #         files: release-assets/*
-  #         draft: false
-  #         prerelease: false
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - uses: actions/checkout@v4
+ 
+      - name: Parse version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#b}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+ 
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+ 
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.tar.xz' -o -name '*.zip' -o -name 'files-*.txt' \) -exec cp {} release-assets/ \;
+          ls -la release-assets/
+ 
+      - name: Commit file lists
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BRANCH="${GITHUB_REF_NAME}"
+          find artifacts -name 'files-*.txt' -exec cp {} . \;
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add files-*.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add file lists for v${VERSION}"
+            git pull --rebase origin "${BRANCH}"
+            git push origin "HEAD:${BRANCH}"
+          fi
+ 
+      - name: Force update version tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git tag -f "v${VERSION}"
+          git push -f origin "v${VERSION}"
+ 
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: LLVM ${{ steps.version.outputs.version }}
+          body: |
+            Prebuilt LLVM ${{ steps.version.outputs.version }} archives with full API and clang.
+ 
+            ## Archives
+            | Target | Archive | Files |
+            |--------|---------|-------|
+            | Linux x86_64 | `llvm-${{ steps.version.outputs.version }}-linux-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64.txt) |
+            | Linux AArch64 | `llvm-${{ steps.version.outputs.version }}-linux-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64.txt) |
+            | Linux x86_64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-x86_64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-x86_64-musl.txt) |
+            | Linux AArch64 (musl) | `llvm-${{ steps.version.outputs.version }}-linux-aarch64-musl.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-aarch64-musl.txt) |
+            | Linux i686 | `llvm-${{ steps.version.outputs.version }}-linux-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-linux-i686.txt) |
+            | macOS ARM64 | `llvm-${{ steps.version.outputs.version }}-macos-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-aarch64.txt) |
+            | macOS Intel | `llvm-${{ steps.version.outputs.version }}-macos-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-macos-x86_64.txt) |
+            | Windows x64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-msvc.txt) |
+            | Windows x64 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-gnu.txt) |
+            | Windows ARM64 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-aarch64-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-aarch64-msvc.txt) |
+            | Windows i686 (MSVC) | `llvm-${{ steps.version.outputs.version }}-windows-i686-msvc.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-msvc.txt) |
+            | Windows i686 (GNU) | `llvm-${{ steps.version.outputs.version }}-windows-i686-gnu.zip` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-windows-i686-gnu.txt) |
+            | FreeBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-freebsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-x86_64.txt) |
+            | FreeBSD i686 | `llvm-${{ steps.version.outputs.version }}-freebsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-freebsd-i686.txt) |
+            | NetBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-netbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-x86_64.txt) |
+            | NetBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-netbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-aarch64.txt) |
+            | NetBSD i686 | `llvm-${{ steps.version.outputs.version }}-netbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-netbsd-i686.txt) |
+            | OpenBSD x86_64 | `llvm-${{ steps.version.outputs.version }}-openbsd-x86_64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-x86_64.txt) |
+            | OpenBSD AArch64 | `llvm-${{ steps.version.outputs.version }}-openbsd-aarch64.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-aarch64.txt) |
+            | OpenBSD i686 | `llvm-${{ steps.version.outputs.version }}-openbsd-i686.tar.xz` | [files](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/files-v${{ steps.version.outputs.version }}-openbsd-i686.txt) |
+          files: release-assets/*
+          draft: false
+          prerelease: false
