@@ -26,18 +26,18 @@ jobs:
           - "21.1.4"
           - "22.1.0"
         target:
-          # - linux-x86_64
-          # - linux-aarch64
-          # - linux-x86_64-musl
-          # - linux-aarch64-musl
-          # - linux-i686
-          # - macos-aarch64
-          # - macos-x86_64
-          # - windows-msvc
-          # - windows-gnu
-          # - windows-aarch64-msvc
-          # - windows-i686-msvc
-          # - windows-i686-gnu
+          - linux-x86_64
+          - linux-aarch64
+          - linux-x86_64-musl
+          - linux-aarch64-musl
+          - linux-i686
+          - macos-aarch64
+          - macos-x86_64
+          - windows-msvc
+          - windows-gnu
+          - windows-aarch64-msvc
+          - windows-i686-msvc
+          - windows-i686-gnu
           - freebsd-x86_64
           - freebsd-i686
           - netbsd-x86_64
@@ -47,30 +47,30 @@ jobs:
           - openbsd-aarch64
           - openbsd-i686
         include:
-          # - target: linux-x86_64
-          #   runner: ubuntu-latest
-          # - target: linux-aarch64
-          #   runner: ubuntu-24.04-arm
-          # - target: linux-x86_64-musl
-          #   runner: ubuntu-latest
-          # - target: linux-aarch64-musl
-          #   runner: ubuntu-24.04-arm
-          # - target: linux-i686
-          #   runner: ubuntu-latest
-          # - target: macos-aarch64
-          #   runner: macos-latest
-          # - target: macos-x86_64
-          #   runner: macos-15-intel
-          # - target: windows-msvc
-          #   runner: windows-latest
-          # - target: windows-gnu
-          #   runner: windows-latest
-          # - target: windows-aarch64-msvc
-          #   runner: windows-11-arm
-          # - target: windows-i686-msvc
-          #   runner: windows-latest
-          # - target: windows-i686-gnu
-          #   runner: windows-latest
+          - target: linux-x86_64
+            runner: ubuntu-latest
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+          - target: linux-x86_64-musl
+            runner: ubuntu-latest
+          - target: linux-aarch64-musl
+            runner: ubuntu-24.04-arm
+          - target: linux-i686
+            runner: ubuntu-latest
+          - target: macos-aarch64
+            runner: macos-latest
+          - target: macos-x86_64
+            runner: macos-15-intel
+          - target: windows-msvc
+            runner: windows-latest
+          - target: windows-gnu
+            runner: windows-latest
+          - target: windows-aarch64-msvc
+            runner: windows-11-arm
+          - target: windows-i686-msvc
+            runner: windows-latest
+          - target: windows-i686-gnu
+            runner: windows-latest
           - target: freebsd-x86_64
             runner: ubuntu-latest
           - target: freebsd-i686
