@@ -1,4 +1,4 @@
-name: "Install LLVM and Clang"
+name: "LLVM full install action"
 description: "Downloads and installs prebuilt LLVM, Clang, and LLD binaries with full C/C++ API."
 
 branding:
@@ -132,6 +132,23 @@ runs:
           *)         EXT="tar.xz" ;;
         esac
 
+        case "$TARGET" in
+          linux-*|macos-*|windows-*|freebsd-*|netbsd-*|openbsd-*) ;;
+          *) echo "Unsupported target: $TARGET" >&2; exit 1 ;;
+        esac
+
+        case "$TARGET:$(uname -s)" in
+          freebsd-*:FreeBSD|netbsd-*:NetBSD|openbsd-*:OpenBSD)
+            BSD_CROSS_TARGET="false"
+            ;;
+          freebsd-*:*|netbsd-*:*|openbsd-*:*)
+            BSD_CROSS_TARGET="true"
+            ;;
+          *)
+            BSD_CROSS_TARGET="false"
+            ;;
+        esac
+
         # Determine default install directory
         case "$TARGET" in
           windows-*)
@@ -153,6 +170,7 @@ runs:
         echo "target=${TARGET}" >> "$GITHUB_OUTPUT"
         echo "ext=${EXT}" >> "$GITHUB_OUTPUT"
         echo "install_dir=${INSTALL_DIR}" >> "$GITHUB_OUTPUT"
+        echo "bsd_cross_target=${BSD_CROSS_TARGET}" >> "$GITHUB_OUTPUT"
 
     # ── 3. Download prebuilt archive ────────────────────────────────────
     - name: Download prebuilt LLVM archive
@@ -196,12 +214,46 @@ runs:
 
           PREBUILT="true"
           echo "Successfully downloaded and extracted prebuilt archive"
+
+          # Older LLVM binaries may require libtinfo5 (ncurses 5). A simple
+          # symlink .so.5→.so.6 is insufficient because versioned symbols like
+          # NCURSES_TINFO_5.0.19991023 are absent from libtinfo.so.6.
+          # Ubuntu 23.04+ removed libtinfo5, so install from the jammy archive.
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            case "$TARGET" in
+              linux-*)
+                if ! dpkg -s libtinfo5 >/dev/null 2>&1; then
+                  if ! sudo apt-get install -y -qq libtinfo5 2>/dev/null; then
+                    arch="$(dpkg --print-architecture)"
+                    if [ "$arch" = "arm64" ]; then
+                      repo_url="http://ports.ubuntu.com/ubuntu-ports"
+                    else
+                      repo_url="http://archive.ubuntu.com/ubuntu"
+                    fi
+                    echo "deb ${repo_url} jammy universe" | sudo tee /etc/apt/sources.list.d/jammy-universe.list >/dev/null
+                    sudo apt-get update -qq -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/jammy-universe.list -o Dir::Etc::sourceparts=- >/dev/null 2>&1
+                    sudo apt-get install -y -qq libtinfo5 2>/dev/null || true
+                    sudo rm -f /etc/apt/sources.list.d/jammy-universe.list
+                  fi
+                fi
+                ;;
+              *)
+                ;;
+            esac
+          fi
         else
           echo "Prebuilt archive not available for ${TARGET}"
         fi
 
         echo "prebuilt=${PREBUILT}" >> "$GITHUB_OUTPUT"
         echo "::endgroup::"
+
+    - name: "Fallback: Unsupported for BSD targets"
+      if: steps.download.outputs.prebuilt != 'true' && (startsWith(steps.target.outputs.target, 'freebsd-') || startsWith(steps.target.outputs.target, 'netbsd-') || startsWith(steps.target.outputs.target, 'openbsd-'))
+      shell: bash
+      run: |
+        echo "::error::No prebuilt archive is available for ${{ steps.target.outputs.target }} and this action cannot fall back to a native Linux/macOS/Windows LLVM for a BSD target."
+        exit 1
 
     # ── 4. Fallback: build from source / apt / brew ─────────────────────
     - name: Restore LLVM cache (Linux old LLVM)
@@ -426,7 +478,52 @@ runs:
         cmake --build "$build_root" --config Release --target install --parallel
         echo "::endgroup::"
 
-    # ── 5. Set up environment variables ─────────────────────────────────
+    # ── 5. Install runtime dependencies ─────────────────────────────────
+    - name: Install musl runtime
+      if: (steps.target.outputs.target == 'linux-x86_64-musl' || steps.target.outputs.target == 'linux-aarch64-musl') && runner.os == 'Linux'
+      shell: bash
+      run: |
+        if ! dpkg -s musl >/dev/null 2>&1; then
+          sudo apt-get update -qq && sudo apt-get install -y -qq musl
+        fi
+
+    - name: Install i386 runtime
+      if: steps.target.outputs.target == 'linux-i686' && runner.os == 'Linux'
+      shell: bash
+      run: |
+        if ! dpkg --print-foreign-architectures | grep -q i386; then
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -qq
+        fi
+        need_install=false
+        for pkg in libc6:i386 libstdc++6:i386 zlib1g:i386; do
+          if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+            need_install=true
+            break
+          fi
+        done
+        if [ "$need_install" = "true" ]; then
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libc6:i386 libstdc++6:i386 zlib1g:i386
+        fi
+
+    - name: Add MINGW64 to PATH
+      if: steps.target.outputs.target == 'windows-gnu' && runner.os == 'Windows'
+      shell: bash
+      run: |
+        if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+          echo "C:\\msys64\\mingw64\\bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: Add MINGW32 to PATH
+      if: steps.target.outputs.target == 'windows-i686-gnu' && runner.os == 'Windows'
+      shell: bash
+      run: |
+        if ! command -v i686-w64-mingw32-gcc >/dev/null 2>&1; then
+          echo "C:\\msys64\\mingw32\\bin" >> "$GITHUB_PATH"
+        fi
+
+    # ── 6. Set up environment variables ─────────────────────────────────
     - name: Set up LLVM environment
       id: setup
       shell: bash
@@ -470,27 +567,45 @@ runs:
           echo "LLVM_INCLUDE_DIR=${INSTALL_DIR}/include" >> "$GITHUB_ENV"
           echo "LLVM_LIBRARY_DIR=${INSTALL_DIR}/lib" >> "$GITHUB_ENV"
           echo "LIBCLANG_PATH=${INSTALL_DIR}/lib" >> "$GITHUB_ENV"
-          if [ -x "${INSTALL_DIR}/bin/llvm-config" ]; then
+          TARGET="${{ steps.target.outputs.target }}"
+          case "$TARGET" in
+            linux-*) export LD_LIBRARY_PATH="${INSTALL_DIR}/lib:${LD_LIBRARY_PATH:-}" ;;
+          esac
+          if [ -x "${INSTALL_DIR}/bin/llvm-config" ] && "${INSTALL_DIR}/bin/llvm-config" --version >/dev/null 2>&1; then
             echo "LLVM_CONFIG=${INSTALL_DIR}/bin/llvm-config" >> "$GITHUB_ENV"
             echo "LLVM_CONFIG_PATH=${INSTALL_DIR}/bin/llvm-config" >> "$GITHUB_ENV"
-          elif command -v "llvm-config-${LLVM_MAJOR}" >/dev/null 2>&1; then
+          elif [ "${{ steps.target.outputs.bsd_cross_target }}" != "true" ] && command -v "llvm-config-${LLVM_MAJOR}" >/dev/null 2>&1; then
             echo "LLVM_CONFIG=llvm-config-${LLVM_MAJOR}" >> "$GITHUB_ENV"
             echo "LLVM_CONFIG_PATH=llvm-config-${LLVM_MAJOR}" >> "$GITHUB_ENV"
           fi
           echo "${INSTALL_DIR}/bin" >> "$GITHUB_PATH"
           if [ "${{ runner.os }}" = "Linux" ]; then
-            echo "CPATH=${INSTALL_DIR}/include:${CPATH}" >> "$GITHUB_ENV"
-            echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH}" >> "$GITHUB_ENV"
-            echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+            case "$TARGET" in
+              freebsd-*|netbsd-*|openbsd-*)
+                ;;
+              *)
+                echo "CPATH=${INSTALL_DIR}/include:${CPATH}" >> "$GITHUB_ENV"
+                echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH}" >> "$GITHUB_ENV"
+                case "$TARGET" in
+                  linux-*) echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV" ;;
+                esac
+                ;;
+            esac
           else
-            echo "DYLD_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+            # Use DYLD_FALLBACK_LIBRARY_PATH (not DYLD_LIBRARY_PATH) on macOS.
+            # DYLD_LIBRARY_PATH overrides system libs, causing LLVM's bundled
+            # libc++abi.dylib to replace the system version and break frameworks.
+            # DYLD_FALLBACK_LIBRARY_PATH is searched AFTER default paths, so system
+            # libs load normally while LLVM-only libs (e.g. libunwind.1.dylib) are
+            # still found.
+            echo "DYLD_FALLBACK_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_FALLBACK_LIBRARY_PATH}" >> "$GITHUB_ENV"
           fi
         fi
 
         # LLVM_SYS_*_PREFIX for Rust llvm-sys crate
         echo "LLVM_SYS_${{ steps.parse.outputs.majmin }}_PREFIX=${INSTALL_DIR}" >> "$GITHUB_ENV"
 
-    # ── 6. Optionally set CC/CXX ────────────────────────────────────────
+    # ── 7. Optionally set CC/CXX ────────────────────────────────────────
     - name: Set CC and CXX
       if: inputs.env == 'true'
       shell: bash
@@ -506,6 +621,13 @@ runs:
             echo "CXX=${INSTALL_DIR}\\bin\\clang++.exe" >> "$GITHUB_ENV"
           fi
         else
+          case "${{ steps.target.outputs.target }}:$(uname -s)" in
+            freebsd-*:FreeBSD|netbsd-*:NetBSD|openbsd-*:OpenBSD) ;;
+            freebsd-*:*|netbsd-*:*|openbsd-*:*)
+              echo "Skipping CC/CXX for non-native ${{ steps.target.outputs.target }} archive"
+              exit 0
+              ;;
+          esac
           if [ -x "${INSTALL_DIR}/bin/clang" ]; then
             echo "CC=${INSTALL_DIR}/bin/clang" >> "$GITHUB_ENV"
             echo "CXX=${INSTALL_DIR}/bin/clang++" >> "$GITHUB_ENV"
@@ -515,7 +637,7 @@ runs:
           fi
         fi
 
-    # ── 7. Verify installation ──────────────────────────────────────────
+    # ── 8. Verify installation ──────────────────────────────────────────
     - name: Verify LLVM installation
       shell: bash
       run: |

@@ -1,0 +1,242 @@
+name: Test cibuildwheel
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: cibw / ${{ matrix.version }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "10.0.1"
+          - "11.0.1"
+          - "12.0.1"
+          - "13.0.1"
+          - "14.0.6"
+          - "15.0.7"
+          - "16.0.6"
+          - "17.0.6"
+          - "18.1.8"
+          - "19.1.7"
+          - "20.1.8"
+          - "21.1.4"
+          - "22.1.0"
+        target:
+          - linux-x86_64
+          - linux-aarch64
+          - macos-aarch64
+          - macos-x86_64
+          - windows-msvc
+          - freebsd-x86_64
+          - freebsd-i686
+          - netbsd-x86_64
+          - netbsd-aarch64
+          - netbsd-i686
+          - openbsd-x86_64
+          - openbsd-aarch64
+          - openbsd-i686
+        include:
+          - target: linux-x86_64
+            runner: ubuntu-latest
+            cibw_build: "cp312-manylinux_x86_64"
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+            cibw_build: "cp312-manylinux_aarch64"
+          - target: macos-aarch64
+            runner: macos-latest
+            cibw_build: "cp312-macosx_arm64"
+          - target: macos-x86_64
+            runner: macos-15-intel
+            cibw_build: "cp312-macosx_x86_64"
+          - target: windows-msvc
+            runner: windows-latest
+            cibw_build: "cp312-win_amd64"
+          # cibuildwheel has no BSD platform backend. These entries smoke-test
+          # that BSD archives install cleanly and do not expose host LLVM_CONFIG.
+          - target: freebsd-x86_64
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: freebsd-i686
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: netbsd-x86_64
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: netbsd-aarch64
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: netbsd-i686
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: openbsd-x86_64
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: openbsd-aarch64
+            runner: ubuntu-latest
+            cibw_supported: "false"
+          - target: openbsd-i686
+            runner: ubuntu-latest
+            cibw_supported: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compute LLVM variables
+        id: vars
+        shell: bash
+        run: |
+          VERSION="${{ matrix.version }}"
+          MAJOR="${VERSION%%.*}"
+          MINOR="$(echo "$VERSION" | cut -d. -f2)"
+          MAJMIN="${MAJOR}${MINOR}"
+          echo "majmin=${MAJMIN}" >> "$GITHUB_OUTPUT"
+
+      - name: Patch llvm-sys version in Cargo.toml
+        if: matrix.cibw_supported != 'false'
+        shell: bash
+        run: |
+          sed -i.bak 's|version = "181"|version = "${{ steps.vars.outputs.majmin }}"|' examples/pyo3-llvm-sys/Cargo.toml
+          rm -f examples/pyo3-llvm-sys/Cargo.toml.bak
+          cat examples/pyo3-llvm-sys/Cargo.toml
+
+      # Install LLVM on the host for Windows (cibuildwheel on Windows is not
+      # containerized) and for BSD archive smoke tests (cibuildwheel does not
+      # build BSD wheels).
+      - name: Install LLVM (host archive)
+        id: llvm
+        if: runner.os == 'Windows' || matrix.cibw_supported == 'false'
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+          target: ${{ matrix.target }}
+          fallback: "false"
+
+      - name: Verify BSD archive
+        if: matrix.cibw_supported == 'false'
+        shell: bash
+        run: |
+          prefix="${{ steps.llvm.outputs.prefix }}"
+          echo "Installed ${{ matrix.target }} LLVM at $prefix"
+
+          for d in bin include lib; do
+            if [ ! -d "$prefix/$d" ]; then
+              echo "::error::Missing directory: $prefix/$d"
+              exit 1
+            fi
+          done
+
+          for h in llvm-c/Types.h llvm-c/TargetMachine.h clang-c/Index.h; do
+            if [ ! -f "$prefix/include/$h" ]; then
+              echo "::error::Missing header: $h"
+              exit 1
+            fi
+          done
+
+          if [ -n "${LLVM_CONFIG:-}" ]; then
+            echo "::error::LLVM_CONFIG should not be exported for non-native BSD archives on Linux: $LLVM_CONFIG"
+            exit 1
+          fi
+
+          config="$prefix/bin/llvm-config"
+          if [ ! -f "$config" ]; then
+            echo "::error::Missing llvm-config binary at $config"
+            exit 1
+          fi
+          file "$config" || true
+
+          lib_count=$(find "$prefix/lib" -maxdepth 1 \( -name '*.a' -o -name '*.so' \) | wc -l)
+          echo "Library files in $prefix/lib: $lib_count"
+          if [ "$lib_count" -eq 0 ]; then
+            echo "::error::No libraries found in $prefix/lib"
+            exit 1
+          fi
+
+      - name: Build wheels
+        if: matrix.cibw_supported != 'false'
+        uses: pypa/cibuildwheel@v2.23.2
+        with:
+          package-dir: examples/pyo3-llvm-sys
+          output-dir: wheelhouse
+        env:
+          CIBW_BUILD: ${{ matrix.cibw_build }}
+
+          # Use manylinux_2_34 (AlmaLinux 9, GLIBC 2.34) — prebuilt LLVM archives
+          # are built on Ubuntu 22.04+ and need GLIBC 2.32+, which manylinux_2_28
+          # (GLIBC 2.28) cannot provide.
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64
+
+          # ── Linux: install Rust + LLVM inside the manylinux container ──
+          # - ncurses-compat-libs: older LLVM (10–15) links libtinfo.so.5
+          # - gcc-toolset-13: LLVM 20+ needs GLIBCXX_3.4.32 (AlmaLinux 9 base has 3.4.29)
+          CIBW_BEFORE_ALL_LINUX: >
+            (dnf install -y ncurses-compat-libs || true) &&
+            (dnf install -y gcc-toolset-13-gcc-c++ ||
+             dnf install -y gcc-toolset-12-gcc-c++ ||
+             echo "WARNING: Could not install gcc-toolset") &&
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
+            bash {project}/install-llvm.sh ${{ matrix.version }} &&
+            GCC_LIB=$(ls -d /opt/rh/gcc-toolset-*/root/usr/lib64 2>/dev/null | sort -Vr | head -1) &&
+            export LD_LIBRARY_PATH="${GCC_LIB:-}:/opt/llvm/lib:${LD_LIBRARY_PATH:-}" &&
+            /opt/llvm/bin/llvm-config --version ||
+            (echo "llvm-config failed - diagnostics:" && ldd /opt/llvm/bin/llvm-config 2>&1 || true && false)
+          CIBW_ENVIRONMENT_LINUX: >
+            PATH=/opt/llvm/bin:$HOME/.cargo/bin:$PATH
+            LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/rh/gcc-toolset-12/root/usr/lib64:/opt/llvm/lib
+            LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
+          # ── macOS: install LLVM via the local shell script ──
+          CIBW_BEFORE_ALL_MACOS: >
+            bash {project}/install-llvm.sh ${{ matrix.version }}
+          CIBW_ENVIRONMENT_MACOS: >
+            PATH=/opt/llvm/bin:$PATH
+            DYLD_FALLBACK_LIBRARY_PATH=/opt/llvm/lib
+            LLVM_SYS_${{ steps.vars.outputs.majmin }}_PREFIX=/opt/llvm
+            LIBCLANG_PATH=/opt/llvm/lib
+
+          # ── Windows: uses host-installed LLVM (set by the action above) ──
+          # LLVM_SYS_*_PREFIX and LIBCLANG_PATH are already set by the action
+
+      - name: Verify wheels
+        if: matrix.cibw_supported != 'false'
+        shell: bash
+        run: |
+          echo "Built wheels:"
+          ls -lh wheelhouse/
+          count=$(ls wheelhouse/*.whl 2>/dev/null | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No wheel files found in wheelhouse/"
+            exit 1
+          fi
+          echo "Found $count wheel(s)"
+
+          for whl in wheelhouse/*.whl; do
+            echo "Inspecting $whl for native library..."
+            python3 -c "
+          import zipfile, sys
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              names = z.namelist()
+              native = [n for n in names if 'pyo3_llvm_sys' in n and (n.endswith('.so') or n.endswith('.pyd') or n.endswith('.dylib'))]
+              if not native:
+                  print('::error::No native library found in ' + sys.argv[1])
+                  for n in sorted(names):
+                      print('  ' + n)
+                  sys.exit(1)
+              for n in native:
+                  info = z.getinfo(n)
+                  print(f'  Native library: {n} ({info.file_size} bytes)')
+                  if info.file_size == 0:
+                      print('::error::Native library is empty: ' + n)
+                      sys.exit(1)
+          " "$whl" || exit 1
+          done
