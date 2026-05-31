@@ -38,14 +38,6 @@ jobs:
           - windows-aarch64-msvc
           - windows-i686-msvc
           - windows-i686-gnu
-          - freebsd-x86_64
-          - freebsd-i686
-          - netbsd-x86_64
-          - netbsd-aarch64
-          - netbsd-i686
-          - openbsd-x86_64
-          - openbsd-aarch64
-          - openbsd-i686
         include:
           - target: linux-x86_64
             runner: ubuntu-latest
@@ -71,22 +63,6 @@ jobs:
             runner: windows-latest
           - target: windows-i686-gnu
             runner: windows-latest
-          - target: freebsd-x86_64
-            runner: ubuntu-latest
-          - target: freebsd-i686
-            runner: ubuntu-latest
-          - target: netbsd-x86_64
-            runner: ubuntu-latest
-          - target: netbsd-aarch64
-            runner: ubuntu-latest
-          - target: netbsd-i686
-            runner: ubuntu-latest
-          - target: openbsd-x86_64
-            runner: ubuntu-latest
-          - target: openbsd-aarch64
-            runner: ubuntu-latest
-          - target: openbsd-i686
-            runner: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -253,3 +229,83 @@ jobs:
           fi
 
           echo "All $count components verified."
+
+  test-bsd:
+    name: ${{ matrix.version }} / ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "10.0.1"
+          - "11.0.1"
+          - "12.0.1"
+          - "13.0.1"
+          - "14.0.6"
+          - "15.0.7"
+          - "16.0.6"
+          - "17.0.6"
+          - "18.1.8"
+          - "19.1.7"
+          - "20.1.8"
+          - "21.1.4"
+          - "22.1.0"
+        target:
+          - freebsd-x86_64
+          - freebsd-i686
+          - netbsd-x86_64
+          - netbsd-aarch64
+          - netbsd-i686
+          - openbsd-x86_64
+          - openbsd-aarch64
+          - openbsd-i686
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Install LLVM via the action ───────────────────────────────
+      - name: Install LLVM
+        id: llvm
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+          target: ${{ matrix.target }}
+          fallback: "false"
+
+      # ── Verify BSD cross-target archive ───────────────────────────
+      - name: Verify BSD archive
+        shell: bash
+        run: |
+          prefix="${LLVM_PREFIX:-${{ steps.llvm.outputs.prefix }}}"
+          echo "Target: ${{ matrix.target }}"
+          echo "Verifying installation at $prefix..."
+
+          for d in bin include lib; do
+            if [ ! -d "$prefix/$d" ]; then
+              echo "::error::Missing directory: $prefix/$d"
+              exit 1
+            fi
+          done
+
+          for h in "llvm-c/Types.h" "llvm-c/TargetMachine.h"; do
+            if [ ! -f "$prefix/include/$h" ]; then
+              echo "::warning::Missing header: $h"
+            fi
+          done
+
+          config_path="$prefix/bin/llvm-config"
+          if [ ! -f "$config_path" ]; then
+            echo "::error::llvm-config binary not found at: $config_path"
+            exit 1
+          fi
+          echo "llvm-config binary: $config_path ($(wc -c < "$config_path") bytes)"
+          file "$config_path" 2>/dev/null || true
+
+          libdir="$prefix/lib"
+          lib_count=$(find "$libdir" -maxdepth 1 \( -name '*.a' -o -name '*.so' -o -name '*.lib' -o -name '*.dylib' \) 2>/dev/null | wc -l)
+          echo "Library files in $libdir: $lib_count"
+          if [ "$lib_count" -eq 0 ]; then
+            echo "::error::No library files found in $libdir"
+            exit 1
+          fi
+          echo "BSD archive verification passed."
