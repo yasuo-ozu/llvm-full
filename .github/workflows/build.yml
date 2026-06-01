@@ -160,6 +160,12 @@ jobs:
           LLVM_TARGETS="${{ matrix.llvm_targets }}"
           CONTAINER="${{ matrix.container }}"
 
+          # LLVM ≤ 17 requires GCC ≤ 13; alpine:3.21 ships GCC 14 which rejects
+          # valid token-pasting idioms used in older LLVM sources (e.g. TokenKinds.def).
+          if echo "$CONTAINER" | grep -q "^alpine:" && [ "$MAJOR" -le 17 ]; then
+            CONTAINER="alpine:3.20"
+          fi
+
           cat > "$RUNNER_TEMP/docker-build.sh" << 'BUILDSCRIPT'
           #!/bin/sh
           set -eu
@@ -202,6 +208,17 @@ jobs:
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 15 ]; then
             sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
           fi
+          # LLVM ≤ 17 sancov.cpp uses {{ClIgnorelist}} brace-init where newer BSD
+          # sysroot libc++ marks the matching basic_string template constructor explicit,
+          # causing a copy-initialization error.  Replace with direct std::string().
+          case "$TARGET" in
+            freebsd-*|netbsd-*|openbsd-*)
+              if [ "${MAJOR}" -le 17 ]; then
+                sed -i 's/SpecialCaseList::createOrDie({{ClIgnorelist}}/SpecialCaseList::createOrDie({std::string(ClIgnorelist)}/' \
+                  /tmp/llvm-project/llvm/tools/sancov/sancov.cpp 2>/dev/null || true
+              fi
+              ;;
+          esac
 
           # ── BSD cross-compilation: download sysroot ──
           # Helper: download URL to a file with retries, then extract.
@@ -684,6 +701,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
+            -DCMAKE_CXX_FLAGS_RELEASE="-O1 -DNDEBUG" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
