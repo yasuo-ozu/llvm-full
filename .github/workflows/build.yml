@@ -193,8 +193,12 @@ jobs:
             esac
           fi
 
-          git clone --depth 1 --branch "llvmorg-${VERSION}" \
-            https://github.com/llvm/llvm-project /tmp/llvm-project
+          for _clone_try in 1 2 3; do
+            git clone --depth 1 --branch "llvmorg-${VERSION}" \
+              https://github.com/llvm/llvm-project /tmp/llvm-project && break
+            [ "$_clone_try" = 3 ] && exit 1
+            rm -rf /tmp/llvm-project; sleep 30
+          done
 
           # Older LLVM on musl can miss uintptr_t include in Signals.h.
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 13 ]; then
@@ -226,9 +230,14 @@ jobs:
           musl_cross_cmake_args=""
           if [ "$TARGET" = "linux-aarch64-musl" ] && [ "$(uname -m)" = "x86_64" ]; then
             MUSL_AARCH64_CROSS=true
-            curl -fsSL --http1.1 --retry 8 --retry-all-errors --retry-delay 5 --max-time 600 \
-              https://musl.cc/aarch64-linux-musl-cross.tgz -o /tmp/cross.tgz
-            tar xzf /tmp/cross.tgz -C /opt/
+            # Cross-compiler is pre-extracted from muslcc Docker Hub image and mounted
+            # at /opt/aarch64-linux-musl-cross by the host before docker run.
+            # Fall back to musl.cc download only if the mount is absent.
+            if ! [ -d "/opt/aarch64-linux-musl-cross" ]; then
+              curl -fsSL --http1.1 --retry 8 --retry-all-errors --retry-delay 5 --max-time 600 \
+                https://musl.cc/aarch64-linux-musl-cross.tgz -o /tmp/cross.tgz
+              tar xzf /tmp/cross.tgz -C /opt/
+            fi
             export PATH="/opt/aarch64-linux-musl-cross/bin:$PATH"
             musl_cross_cmake_args="-DCMAKE_C_COMPILER=aarch64-linux-musl-gcc"
             musl_cross_cmake_args="$musl_cross_cmake_args -DCMAKE_CXX_COMPILER=aarch64-linux-musl-g++"
@@ -446,6 +455,22 @@ jobs:
           cmake --build /tmp/llvm-build --target install --parallel
           BUILDSCRIPT
 
+          # Pre-extract musl.cc aarch64 cross-compiler from Docker Hub image so the
+          # Alpine container doesn't need to reach musl.cc (which is flaky).
+          MUSL_MOUNT=""
+          if [ "$TARGET" = "linux-aarch64-musl" ]; then
+            mkdir -p "$RUNNER_TEMP/musl-cross"
+            for _j in 1 2 3; do
+              docker pull muslcc/x86_64:aarch64-linux-musl && break
+              [ "$_j" = 3 ] && exit 1
+              sleep 30
+            done
+            docker create --name _musl_cross_tmp muslcc/x86_64:aarch64-linux-musl true
+            docker cp _musl_cross_tmp:/usr/local/musl/. "$RUNNER_TEMP/musl-cross/"
+            docker rm _musl_cross_tmp
+            MUSL_MOUNT="-v $RUNNER_TEMP/musl-cross:/opt/aarch64-linux-musl-cross"
+          fi
+
           for _i in 1 2 3; do
             docker pull "$CONTAINER" && break
             [ "$_i" = 3 ] && exit 1
@@ -453,6 +478,7 @@ jobs:
           done
           docker run --rm \
             -v "$RUNNER_TEMP:/runner-temp" \
+            $MUSL_MOUNT \
             -e VERSION="$VERSION" \
             -e MAJOR="$MAJOR" \
             -e TARGET="$TARGET" \
@@ -604,8 +630,12 @@ jobs:
         if: steps.docker-build.outputs.done != 'true' && steps.check-official.outputs.source == 'build'
         shell: bash
         run: |
-          git clone --depth 1 --branch "llvmorg-${{ steps.version.outputs.version }}" \
-            https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project"
+          for _i in 1 2 3; do
+            git clone --depth 1 --branch "llvmorg-${{ steps.version.outputs.version }}" \
+              https://github.com/llvm/llvm-project "$RUNNER_TEMP/llvm-project" && break
+            [ "$_i" = 3 ] && exit 1
+            rm -rf "$RUNNER_TEMP/llvm-project"; sleep 30
+          done
 
       # ── Configure ──────────────────────────────────────────────────
       - name: Configure LLVM (Unix)
@@ -723,33 +753,20 @@ jobs:
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
           fi
-          # 32-bit cc1plus.exe hits its ~2 GB address-space ceiling when compiling
-          # large TUs (CGBuiltin.cpp, etc.) at -O2.  LLVM's cmake appends -O2 via
-          # target_compile_options AFTER CMAKE_CXX_FLAGS_RELEASE, so the only
-          # reliable way to cap optimization is a compiler wrapper that strips -O2.
-          GCC_CXX="$(command -v g++)"
-          WRAPPER="$(cygpath -u "$RUNNER_TEMP")/g++-safe"
-          {
-            echo '#!/bin/bash'
-            echo 'args=()'
-            echo 'for a in "$@"; do'
-            echo '  [[ "$a" == -O2 || "$a" == -O3 ]] && a=-O1'
-            echo '  args+=("$a")'
-            echo 'done'
-            printf 'exec "%s" "${args[@]}"\n' "$GCC_CXX"
-          } > "$WRAPPER"
-          chmod +x "$WRAPPER"
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
-            -DCMAKE_CXX_COMPILER="$WRAPPER" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu"
+          # 32-bit cc1plus.exe hits its ~2 GB address-space ceiling at -O2.
+          # LLVM's cmake injects -O2 via target_compile_options after build-type
+          # flags, so we patch the generated ninja files directly after configure.
+          find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i 's/-O2/-O1/g; s/-O3/-O1/g'
 
       # ── Build ──────────────────────────────────────────────────────
       - name: Build LLVM (MSYS2)
