@@ -465,9 +465,12 @@ jobs:
               [ "$_j" = 3 ] && exit 1
               sleep 30
             done
-            docker create --name musl-cross-tmp muslcc/x86_64:aarch64-linux-musl true
-            docker cp musl-cross-tmp:/usr/local/musl/. "$RUNNER_TEMP/musl-cross/"
-            docker rm musl-cross-tmp
+            # Run the container to self-discover and export the toolchain root;
+            # avoids hardcoding the install path inside the muslcc image.
+            docker run --rm \
+              -v "$RUNNER_TEMP/musl-cross:/dest" \
+              muslcc/x86_64:aarch64-linux-musl \
+              sh -c 'set -e; GCC=$(which aarch64-linux-musl-gcc); ROOT=$(dirname $(dirname "$GCC")); cp -r "$ROOT/." /dest/'
             MUSL_MOUNT="-v $RUNNER_TEMP/musl-cross:/opt/aarch64-linux-musl-cross"
           fi
 
