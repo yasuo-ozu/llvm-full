@@ -86,7 +86,7 @@ jobs:
             container: ""
             llvm_targets: "X86"
             ext: zip
-            msys2: "CLANG32"
+            msys2: "MINGW32"
           - target: freebsd-x86_64
             runner: ubuntu-latest
             container: "debian:bookworm"
@@ -717,10 +717,27 @@ jobs:
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
           fi
+          # 32-bit cc1plus.exe hits its ~2 GB address-space ceiling when compiling
+          # large TUs (CGBuiltin.cpp, etc.) at -O2.  LLVM's cmake appends -O2 via
+          # target_compile_options AFTER CMAKE_CXX_FLAGS_RELEASE, so the only
+          # reliable way to cap optimization is a compiler wrapper that strips -O2.
+          GCC_CXX="$(command -v g++)"
+          WRAPPER="$(cygpath -u "$RUNNER_TEMP")/g++-safe"
+          cat > "$WRAPPER" << WRAPEOF
+#!/bin/bash
+args=()
+for a in "\$@"; do
+  [[ "\$a" == -O2 || "\$a" == -O3 ]] && a=-O1
+  args+=("\$a")
+done
+exec "${GCC_CXX}" "\${args[@]}"
+WRAPEOF
+          chmod +x "$WRAPPER"
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
+            -DCMAKE_CXX_COMPILER="$WRAPPER" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
