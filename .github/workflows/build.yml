@@ -723,15 +723,15 @@ jobs:
           # reliable way to cap optimization is a compiler wrapper that strips -O2.
           GCC_CXX="$(command -v g++)"
           WRAPPER="$(cygpath -u "$RUNNER_TEMP")/g++-safe"
-          cat > "$WRAPPER" << WRAPEOF
-#!/bin/bash
-args=()
-for a in "\$@"; do
-  [[ "\$a" == -O2 || "\$a" == -O3 ]] && a=-O1
-  args+=("\$a")
-done
-exec "${GCC_CXX}" "\${args[@]}"
-WRAPEOF
+          {
+            echo '#!/bin/bash'
+            echo 'args=()'
+            echo 'for a in "$@"; do'
+            echo '  [[ "$a" == -O2 || "$a" == -O3 ]] && a=-O1'
+            echo '  args+=("$a")'
+            echo 'done'
+            printf 'exec "%s" "${args[@]}"\n' "$GCC_CXX"
+          } > "$WRAPPER"
           chmod +x "$WRAPPER"
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
