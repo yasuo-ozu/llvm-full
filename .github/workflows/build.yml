@@ -465,12 +465,13 @@ jobs:
               [ "$_j" = 3 ] && exit 1
               sleep 30
             done
-            # Run the container to self-discover and export the toolchain root;
-            # avoids hardcoding the install path inside the muslcc image.
-            docker run --rm \
+            # The muslcc image uses the cross-compiler as its ENTRYPOINT.
+            # Use --entrypoint sh to run a discovery script instead.
+            # Try PATH first, fall back to find in case PATH isn't set.
+            docker run --rm --entrypoint sh \
               -v "$RUNNER_TEMP/musl-cross:/dest" \
               muslcc/x86_64:aarch64-linux-musl \
-              sh -c 'set -e; GCC=$(which aarch64-linux-musl-gcc); ROOT=$(dirname $(dirname "$GCC")); cp -r "$ROOT/." /dest/'
+              -c 'GCC=$(command -v aarch64-linux-musl-gcc 2>/dev/null); [ -z "$GCC" ] && GCC=$(find / -name "aarch64-linux-musl-gcc" -type f 2>/dev/null | head -1); [ -n "$GCC" ] || exit 1; ROOT=$(dirname $(dirname "$GCC")); cp -r "$ROOT/." /dest/'
             MUSL_MOUNT="-v $RUNNER_TEMP/musl-cross:/opt/aarch64-linux-musl-cross"
           fi
 
