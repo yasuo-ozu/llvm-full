@@ -465,9 +465,9 @@ jobs:
               [ "$_j" = 3 ] && exit 1
               sleep 30
             done
-            docker create --name _musl_cross_tmp muslcc/x86_64:aarch64-linux-musl true
-            docker cp _musl_cross_tmp:/usr/local/musl/. "$RUNNER_TEMP/musl-cross/"
-            docker rm _musl_cross_tmp
+            docker create --name musl-cross-tmp muslcc/x86_64:aarch64-linux-musl true
+            docker cp musl-cross-tmp:/usr/local/musl/. "$RUNNER_TEMP/musl-cross/"
+            docker rm musl-cross-tmp
             MUSL_MOUNT="-v $RUNNER_TEMP/musl-cross:/opt/aarch64-linux-musl-cross"
           fi
 
