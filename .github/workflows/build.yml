@@ -35,7 +35,7 @@ jobs:
             msys2: ""
           - target: linux-aarch64-musl
             runner: ubuntu-latest
-            container: "alpine:3.21"
+            container: "muslcc/x86_64:aarch64-linux-musl"
             llvm_targets: "AArch64"
             ext: tar.xz
             msys2: ""
@@ -226,22 +226,19 @@ jobs:
           esac
 
           # ── aarch64-musl cross-compilation (when running on x86_64 host) ──
+          # The muslcc/x86_64:aarch64-linux-musl container has the aarch64 cross-compiler
+          # pre-installed at /bin/gcc and /bin/g++.  After `apk add gcc g++`, Alpine's
+          # native x86_64 GCC lands at /usr/bin/gcc (higher in PATH), leaving /bin/gcc
+          # as the cross-compiler.  We use /bin/gcc for the main LLVM build and the
+          # default gcc for native tblgen.
           MUSL_AARCH64_CROSS=false
           musl_cross_cmake_args=""
           if [ "$TARGET" = "linux-aarch64-musl" ] && [ "$(uname -m)" = "x86_64" ]; then
             MUSL_AARCH64_CROSS=true
-            # Cross-compiler is pre-extracted from muslcc Docker Hub image and mounted
-            # at /opt/aarch64-linux-musl-cross by the host before docker run.
-            # Fall back to musl.cc download only if the mount is absent.
-            if ! [ -d "/opt/aarch64-linux-musl-cross" ]; then
-              curl -fsSL --http1.1 --retry 8 --retry-all-errors --retry-delay 5 --max-time 600 \
-                https://musl.cc/aarch64-linux-musl-cross.tgz -o /tmp/cross.tgz
-              tar xzf /tmp/cross.tgz -C /opt/
-            fi
-            export PATH="/opt/aarch64-linux-musl-cross/bin:$PATH"
-            musl_cross_cmake_args="-DCMAKE_C_COMPILER=aarch64-linux-musl-gcc"
-            musl_cross_cmake_args="$musl_cross_cmake_args -DCMAKE_CXX_COMPILER=aarch64-linux-musl-g++"
+            musl_cross_cmake_args="-DCMAKE_C_COMPILER=/bin/gcc"
+            musl_cross_cmake_args="$musl_cross_cmake_args -DCMAKE_CXX_COMPILER=/bin/g++"
             musl_cross_cmake_args="$musl_cross_cmake_args -DCMAKE_SYSTEM_NAME=Linux"
+            musl_cross_cmake_args="$musl_cross_cmake_args -DCMAKE_SYSTEM_PROCESSOR=aarch64"
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_HOST_TRIPLE=aarch64-linux-musl"
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_TABLEGEN=/tmp/llvm-native/bin/llvm-tblgen"
             musl_cross_cmake_args="$musl_cross_cmake_args -DCLANG_TABLEGEN=/tmp/llvm-native/bin/clang-tblgen"
@@ -455,26 +452,6 @@ jobs:
           cmake --build /tmp/llvm-build --target install --parallel
           BUILDSCRIPT
 
-          # Pre-extract musl.cc aarch64 cross-compiler from Docker Hub image so the
-          # Alpine container doesn't need to reach musl.cc (which is flaky).
-          MUSL_MOUNT=""
-          if [ "$TARGET" = "linux-aarch64-musl" ]; then
-            mkdir -p "$RUNNER_TEMP/musl-cross"
-            for _j in 1 2 3; do
-              docker pull muslcc/x86_64:aarch64-linux-musl && break
-              [ "$_j" = 3 ] && exit 1
-              sleep 30
-            done
-            # The muslcc image uses the cross-compiler as its ENTRYPOINT.
-            # Use --entrypoint sh to run a discovery script instead.
-            # Try PATH first, fall back to find in case PATH isn't set.
-            docker run --rm --entrypoint sh \
-              -v "$RUNNER_TEMP/musl-cross:/dest" \
-              muslcc/x86_64:aarch64-linux-musl \
-              -c 'GCC=$(command -v aarch64-linux-musl-gcc 2>/dev/null); [ -z "$GCC" ] && GCC=$(find / -name "aarch64-linux-musl-gcc" -type f 2>/dev/null | head -1); [ -n "$GCC" ] || exit 1; ROOT=$(dirname $(dirname "$GCC")); cp -r "$ROOT/." /dest/'
-            MUSL_MOUNT="-v $RUNNER_TEMP/musl-cross:/opt/aarch64-linux-musl-cross"
-          fi
-
           for _i in 1 2 3; do
             docker pull "$CONTAINER" && break
             [ "$_i" = 3 ] && exit 1
@@ -482,7 +459,6 @@ jobs:
           done
           docker run --rm \
             -v "$RUNNER_TEMP:/runner-temp" \
-            $MUSL_MOUNT \
             -e VERSION="$VERSION" \
             -e MAJOR="$MAJOR" \
             -e TARGET="$TARGET" \
