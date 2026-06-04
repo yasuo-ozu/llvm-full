@@ -213,14 +213,16 @@ jobs:
             sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
           fi
 
-          # LLVM ≤ 17 sancov.cpp uses {ClIgnorelist} or {{ClIgnorelist}} brace-init
-          # where newer BSD sysroot libc++ marks the basic_string range constructor
-          # explicit, causing a copy-initialization error. LLVM ≥ 15 uses double
-          # braces; LLVM 14 uses single braces. Patch both forms.
+          # LLVM ≤ 17 sancov.cpp uses {{ClBlacklist}} (LLVM ≤ 14) or {{ClIgnorelist}}
+          # (LLVM ≥ 15) brace-init where newer BSD sysroot libc++ marks the
+          # basic_string range constructor explicit, causing a copy-initialization
+          # error. Patch all three forms (double-brace Blacklist, double-brace
+          # Ignorelist, single-brace Ignorelist).
           case "$TARGET" in
             freebsd-*|netbsd-*|openbsd-*)
               if [ "${MAJOR}" -le 17 ]; then
                 sed -i \
+                  -e 's/SpecialCaseList::createOrDie({{ClBlacklist}}/SpecialCaseList::createOrDie({std::string(ClBlacklist)}/' \
                   -e 's/SpecialCaseList::createOrDie({{ClIgnorelist}}/SpecialCaseList::createOrDie({std::string(ClIgnorelist)}/' \
                   -e 's/SpecialCaseList::createOrDie({ClIgnorelist}/SpecialCaseList::createOrDie({std::string(ClIgnorelist)}/' \
                   /tmp/llvm-project/llvm/tools/sancov/sancov.cpp 2>/dev/null || true
