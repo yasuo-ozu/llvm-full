@@ -415,6 +415,15 @@ jobs:
                 extra_flags="$extra_flags -march=i586"
                 ;;
             esac
+            # NetBSD cross-builds: _Unwind_Resume is not resolved by the sysroot's
+            # libstdc++ alone (no libgcc_s.so available in cross sysroot). The test
+            # shared library PipSqueak.so exposes this via -Wl,-z,defs. Disable
+            # tests since we can't run them in a cross-compiled target anyway.
+            case "$TARGET" in
+              netbsd-*)
+                bsd_cmake_args="$bsd_cmake_args -DCLANG_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF"
+                ;;
+            esac
             # OpenBSD has no separate librt; also work around duplicate libc++
             # symbols from libexecinfo.a in the sysroot. OpenBSD ships
             # libc++abi.a as a non-PIC archive, so we can't link any shared
