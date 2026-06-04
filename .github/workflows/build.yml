@@ -423,8 +423,10 @@ jobs:
             esac
             # NetBSD cross-builds: no libgcc_s.so in the cross sysroot means
             # __register_frame/__deregister_frame/_Unwind_Resume are unresolved
-            # when linking shared libraries (.so). Disable all shared-library
-            # and test targets (we can't run cross-compiled tests anyway).
+            # when linking shared libraries (.so) or tools that use RuntimeDyld.
+            # Disable shared-library, test, and example targets.
+            # LLVM ≤ 11 also uses RuntimeDyld (not JITLink) in lli-child-target,
+            # which references __register_frame — disable lli for those versions.
             case "$TARGET" in
               netbsd-*)
                 bsd_cmake_args="$bsd_cmake_args -DCLANG_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF"
@@ -432,6 +434,9 @@ jobs:
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_LINK_LLVM_DYLIB=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_PLUGINS=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_BUILD_EXAMPLES=OFF"
+                if [ "${MAJOR}" -le 11 ]; then
+                  bsd_cmake_args="$bsd_cmake_args -DLLVM_TOOL_LLI_BUILD=OFF"
+                fi
                 ;;
             esac
             # OpenBSD has no separate librt; also work around duplicate libc++
