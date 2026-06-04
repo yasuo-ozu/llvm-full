@@ -212,6 +212,12 @@ jobs:
           if [ "${TARGET#linux-}" != "${TARGET}" ] && [ "${TARGET%-musl}" != "${TARGET}" ] && [ "${MAJOR}" -le 15 ]; then
             sed -i 's/::lseek64(/::lseek(/g' /tmp/llvm-project/llvm/lib/Support/raw_ostream.cpp
           fi
+          # LLVM ≤ 11 benchmark_register.h uses std::numeric_limits without including
+          # <limits>; newer GCC/musl-libc++ no longer pull it in transitively.
+          if [ "${MAJOR}" -le 11 ]; then
+            sed -i '/#include <vector>/a #include <limits>' \
+              /tmp/llvm-project/llvm/utils/benchmark/src/benchmark_register.h 2>/dev/null || true
+          fi
 
           # LLVM ≤ 17 sancov.cpp uses {{ClBlacklist}} (LLVM ≤ 14) or {{ClIgnorelist}}
           # (LLVM ≥ 15) brace-init where newer BSD sysroot libc++ marks the
@@ -631,6 +637,26 @@ jobs:
             rm -rf "$RUNNER_TEMP/llvm-project"; sleep 30
           done
 
+      # ── Patch source (Windows MSVC, LLVM ≤ 11) ─────────────────────
+      - name: Patch LLVM source (Windows MSVC)
+        if: >-
+          steps.docker-build.outputs.done != 'true' &&
+          steps.check-official.outputs.source == 'build' &&
+          runner.os == 'Windows' &&
+          (matrix.target == 'windows-msvc' || matrix.target == 'windows-aarch64-msvc' || matrix.target == 'windows-i686-msvc')
+        shell: bash
+        run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          if [ "$MAJOR" -le 11 ]; then
+            # MSVC 2022 STL changed is_trivially_copyable behavior; the static_assert
+            # in type_traits.h checking LLVM vs std agreement fires and prevents build.
+            sed -i 's/#ifdef HAVE_STD_IS_TRIVIALLY_COPYABLE/#if 0/' \
+              "$RUNNER_TEMP/llvm-project/llvm/include/llvm/Support/type_traits.h" 2>/dev/null || true
+            # benchmark_register.h missing #include <limits> for std::numeric_limits.
+            sed -i 's/#include <vector>/#include <vector>\n#include <limits>/' \
+              "$RUNNER_TEMP/llvm-project/llvm/utils/benchmark/src/benchmark_register.h" 2>/dev/null || true
+          fi
+
       # ── Configure ──────────────────────────────────────────────────
       - name: Configure LLVM (Unix)
         if: >-
@@ -679,8 +705,14 @@ jobs:
           matrix.target == 'windows-aarch64-msvc'
         shell: bash
         run: |
+          MAJOR="${{ steps.version.outputs.major }}"
+          cmake_args=()
+          if [ "$MAJOR" -le 11 ]; then
+            cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+          fi
           cmake -S "$RUNNER_TEMP/llvm-project/llvm" -B "$RUNNER_TEMP/llvm-build" \
             -G "Visual Studio 17 2022" -A ARM64 \
+            "${cmake_args[@]}" \
             -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/llvm-install" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
