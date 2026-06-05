@@ -256,6 +256,8 @@ jobs:
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_ENABLE_ZLIB=OFF"
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_ENABLE_LIBXML2=OFF"
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_ENABLE_ZSTD=OFF"
+            musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_INCLUDE_TESTS=OFF"
+            musl_cross_cmake_args="$musl_cross_cmake_args -DCLANG_INCLUDE_TESTS=OFF"
           fi
 
           # ── BSD cross-compilation: download sysroot ──
@@ -787,11 +789,10 @@ jobs:
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           INSTALL_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-install"
           # Install 64-bit LLD to avoid 32-bit ld's 4 GB VA-space OOM on large DLLs.
-          # mingw-w64-x86_64-lld installs ld.lld into /mingw64/bin (a 64-bit exe).
+          # mingw-w64-x86_64-lld installs a 64-bit ld.lld.exe into /mingw64/bin.
+          # Copy it into /mingw32/bin so 32-bit GCC's collect2 can find it via -fuse-ld=lld.
           pacman -S --noconfirm --needed mingw-w64-x86_64-lld
-          # Make 64-bit ld.lld visible in the current step and all subsequent steps.
-          export PATH="/mingw64/bin:$PATH"
-          echo "$(cygpath -w /mingw64/bin)" >> "$GITHUB_PATH"
+          cp /mingw64/bin/ld.lld.exe /mingw32/bin/ld.lld.exe
           cmake_args=()
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
