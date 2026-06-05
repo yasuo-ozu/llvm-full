@@ -423,10 +423,12 @@ jobs:
             esac
             # NetBSD cross-builds: no libgcc_s.so in the cross sysroot means
             # __register_frame/__deregister_frame/_Unwind_Resume are unresolved
-            # when linking shared libraries (.so) or tools that use RuntimeDyld.
-            # Disable shared-library, test, and example targets.
-            # LLVM ≤ 11 also uses RuntimeDyld (not JITLink) in lli-child-target,
-            # which references __register_frame — disable lli for those versions.
+            # when linking shared libraries (.so) or executables that pull in
+            # RuntimeDyld (LLVM ≤ 11 uses RuntimeDyld; LLVM ≥ 12 switched to
+            # JITLink which doesn't need these symbols).
+            # Fix: add -lgcc_s via CMAKE_CXX_STANDARD_LIBRARIES so it appears
+            # after all static archives in every C++ link command.
+            # Also disable shared-library, test, and example targets.
             case "$TARGET" in
               netbsd-*)
                 bsd_cmake_args="$bsd_cmake_args -DCLANG_INCLUDE_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF"
@@ -435,7 +437,7 @@ jobs:
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_ENABLE_PLUGINS=OFF"
                 bsd_cmake_args="$bsd_cmake_args -DLLVM_INCLUDE_EXAMPLES=OFF -DLLVM_BUILD_EXAMPLES=OFF"
                 if [ "${MAJOR}" -le 11 ]; then
-                  bsd_cmake_args="$bsd_cmake_args -DLLVM_TOOL_LLI_BUILD=OFF"
+                  bsd_cmake_args="$bsd_cmake_args -DCMAKE_CXX_STANDARD_LIBRARIES=-lgcc_s"
                 fi
                 ;;
             esac
