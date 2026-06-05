@@ -793,6 +793,8 @@ jobs:
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
+            -DCMAKE_C_FLAGS_RELEASE="-O0 -DNDEBUG" \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DLLVM_ENABLE_PROJECTS="clang;lld" \
@@ -800,10 +802,11 @@ jobs:
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu"
-          # 32-bit cc1plus.exe hits its ~2 GB address-space ceiling at -O2.
-          # LLVM's cmake injects -O2 via target_compile_options after build-type
-          # flags, so we patch the generated ninja files directly after configure.
-          find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i 's/-O2/-O1/g; s/-O3/-O1/g'
+          # 32-bit cc1plus.exe exhausts its 4 GB virtual address space even at -O1
+          # for large files like CGBuiltin.cpp. Force -O0 globally: override both the
+          # cmake build-type flags above AND any extra -O2/-O3 LLVM injects via
+          # target_compile_options (which appear as extra flags in the ninja files).
+          find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i 's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g'
 
       # ── Build ──────────────────────────────────────────────────────
       - name: Build LLVM (MSYS2)
