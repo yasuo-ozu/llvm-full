@@ -258,6 +258,7 @@ jobs:
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_ENABLE_ZSTD=OFF"
             musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_INCLUDE_TESTS=OFF"
             musl_cross_cmake_args="$musl_cross_cmake_args -DCLANG_INCLUDE_TESTS=OFF"
+            musl_cross_cmake_args="$musl_cross_cmake_args -DLLVM_BUILD_EXAMPLES=OFF"
           fi
 
           # ── BSD cross-compilation: download sysroot ──
@@ -788,12 +789,12 @@ jobs:
           SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           INSTALL_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-install"
-          # Install 64-bit LLD to avoid 32-bit GNU ld's 4 GB VA-space OOM when linking.
-          # Use -fuse-ld=lld (short name) with /mingw64/bin prepended to PATH so GCC
-          # finds ld.lld.exe there; Windows then finds LLD's DLL deps in that same dir.
-          # Explicitly set 32-bit compilers so the PATH prepend doesn't pick 64-bit GCC.
-          pacman -S --noconfirm --needed mingw-w64-x86_64-lld
-          export PATH="/mingw64/bin:$PATH"
+          # Install 32-bit LLD from MINGW32 to avoid GNU ld's 4 GB VA-space OOM.
+          # 32-bit LLD natively understands i386 BigObj COFF (unlike 64-bit LLD which
+          # mishandles IMAGE_REL_I386_REL32 relocations in BigObj), and uses far less
+          # memory than GNU ld so it can link libclang.dll without OOMing.
+          # It installs to /mingw32/bin/ld.lld.exe, already on PATH in MINGW32 session.
+          pacman -S --noconfirm --needed mingw-w64-i686-lld
           cmake_args=()
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
@@ -805,8 +806,6 @@ jobs:
             -DCMAKE_C_FLAGS_RELEASE="-O0 -DNDEBUG" \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
-            -DCMAKE_C_COMPILER=/mingw32/bin/gcc.exe \
-            -DCMAKE_CXX_COMPILER=/mingw32/bin/g++.exe \
             -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=lld" \
@@ -816,12 +815,9 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF \
             -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu" \
             -DLLVM_ENABLE_DUMP=ON
-          # Patch ninja files: remove LLVM-injected -O levels and -mbig-obj.
-          # -mbig-obj produces BigObj COFF that 64-bit LLD mishandles for i386
-          # (IMAGE_REL_I386_REL32 relocation errors); remove it so GCC emits
-          # regular COFF which LLD handles correctly.
+          # Patch out LLVM-injected -O levels from ninja files.
           find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i \
-            's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g; s/-Wa,-mbig-obj//g'
+            's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g'
 
       # ── Build ──────────────────────────────────────────────────────
       - name: Build LLVM (MSYS2)
@@ -831,9 +827,6 @@ jobs:
           matrix.msys2 != ''
         shell: msys2 {0}
         run: |
-          # For windows-i686-gnu: 64-bit LLD is the linker; /mingw64/bin must be in PATH
-          # so GCC can find ld.lld.exe at link time. Harmless no-op for MINGW64.
-          export PATH="/mingw64/bin:$PATH"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           cmake --build "$BUILD_ROOT" --target install --parallel
 
