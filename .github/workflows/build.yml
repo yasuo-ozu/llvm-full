@@ -814,9 +814,14 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD="${{ matrix.llvm_targets }}" \
             -DLLVM_ENABLE_LIBXML2=OFF \
             -DLLVM_ENABLE_TERMINFO=OFF \
-            -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu"
-          # Patch any LLVM-injected -O1/-O2/-O3 out of the ninja files too.
-          find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i 's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g'
+            -DLLVM_HOST_TRIPLE="i686-w64-windows-gnu" \
+            -DLLVM_ENABLE_DUMP=ON
+          # Patch ninja files: remove LLVM-injected -O levels and -mbig-obj.
+          # -mbig-obj produces BigObj COFF that 64-bit LLD mishandles for i386
+          # (IMAGE_REL_I386_REL32 relocation errors); remove it so GCC emits
+          # regular COFF which LLD handles correctly.
+          find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i \
+            's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g; s/-Wa,-mbig-obj//g'
 
       # ── Build ──────────────────────────────────────────────────────
       - name: Build LLVM (MSYS2)
