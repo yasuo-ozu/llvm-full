@@ -789,12 +789,15 @@ jobs:
           SRC_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-project"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           INSTALL_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-install"
-          # Install 32-bit LLD from MINGW32 to avoid GNU ld's 4 GB VA-space OOM.
-          # 32-bit LLD natively understands i386 BigObj COFF (unlike 64-bit LLD which
-          # mishandles IMAGE_REL_I386_REL32 relocations in BigObj), and uses far less
-          # memory than GNU ld so it can link libclang.dll without OOMing.
-          # It installs to /mingw32/bin/ld.lld.exe, already on PATH in MINGW32 session.
-          pacman -S --noconfirm --needed mingw-w64-i686-lld
+          # Install 64-bit LLD (mingw-w64-x86_64-lld) to avoid 32-bit GNU ld's
+          # 4 GB VA-space OOM when linking libclang.dll at -O0.
+          # Add /mingw64/bin to PATH so GCC finds ld.lld.exe there via -fuse-ld=lld;
+          # Windows resolves DLL deps for ld.lld.exe from that same directory.
+          # Explicitly set 32-bit compilers so the PATH prepend does not pick 64-bit GCC.
+          # LLVM_ENABLE_DUMP=ON marks dump() methods __attribute__((used)) to prevent
+          # --gc-sections from eliminating them and causing undefined-symbol link errors.
+          pacman -S --noconfirm --needed mingw-w64-x86_64-lld
+          export PATH="/mingw64/bin:$PATH"
           cmake_args=()
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
@@ -806,6 +809,8 @@ jobs:
             -DCMAKE_C_FLAGS_RELEASE="-O0 -DNDEBUG" \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
+            -DCMAKE_C_COMPILER=/mingw32/bin/gcc.exe \
+            -DCMAKE_CXX_COMPILER=/mingw32/bin/g++.exe \
             -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
             -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=lld" \
@@ -827,6 +832,8 @@ jobs:
           matrix.msys2 != ''
         shell: msys2 {0}
         run: |
+          # For windows-i686-gnu: /mingw64/bin must be in PATH so GCC finds ld.lld.exe.
+          export PATH="/mingw64/bin:$PATH"
           BUILD_ROOT="$(cygpath -u "$RUNNER_TEMP")/llvm-build"
           cmake --build "$BUILD_ROOT" --target install --parallel
 
