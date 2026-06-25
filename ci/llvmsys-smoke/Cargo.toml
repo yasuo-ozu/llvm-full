@@ -1,0 +1,14 @@
+# CI fixture: a minimal consumer of the `llvm-sys` crate. build.yml's `smoke` job
+# rewrites the `llvm-sys` version line to match the LLVM version being released
+# (LLVM 10..17 -> "<MAJOR>0", LLVM 18+ -> "<MAJOR><MINOR>", e.g. 18.1 -> "181"),
+# then builds and runs this crate against the freshly published archive. The
+# committed default targets the current default LLVM line so the crate also builds
+# standalone for local checks.
+[package]
+name = "llvmsys-smoke"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+llvm-sys = "181"

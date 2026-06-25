@@ -1002,3 +1002,101 @@ jobs:
           files: release-assets/*
           draft: false
           prerelease: false
+
+  # Consumer smoke test: reproduce how llvm-pm (and any `llvm-sys` user) consumes a
+  # release, so consumer-only breakage is caught here instead of downstream. Covers
+  # the classes of problems that previously only surfaced in llvm-pm's CI:
+  #   * the action exporting the wrong LLVM_SYS_<key>_PREFIX (LLVM 18 must map to
+  #     181, not 180 — the llvm-sys crate reads that exact variable name)
+  #   * archives missing link libraries (llvm-sys fails to link)
+  #   * archives missing runtime libraries (macOS @rpath libunwind, Linux libtinfo)
+  #   * Git Bash's GNU link.exe shadowing MSVC's linker on Windows
+  # Runs after `release` so the action downloads the freshly published archive.
+  smoke:
+    name: Smoke llvm-sys / ${{ matrix.target }}
+    needs: release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux-x86_64, runner: ubuntu-latest }
+          - { target: linux-aarch64, runner: ubuntu-24.04-arm }
+          - { target: macos-aarch64, runner: macos-latest }
+          - { target: macos-x86_64, runner: macos-15-intel }
+          - { target: windows-msvc, runner: windows-latest }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#b}" >> "$GITHUB_OUTPUT"
+
+      # Windows: activate MSVC and drop Git Bash's GNU link.exe so it does not shadow
+      # MSVC's linker (the exact failure llvm-pm hit: "/usr/bin/link: extra operand").
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Remove GNU link.exe shadowing MSVC linker (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: rm -f "/c/Program Files/Git/usr/bin/link.exe" "/usr/bin/link.exe" "/usr/bin/link" 2>/dev/null || true
+
+      # Install the just-released archive via THIS action, with fallback disabled so
+      # the prebuilt archive itself is tested (not an apt/brew/source substitute).
+      - name: Install LLVM via this action (prebuilt only)
+        uses: ./
+        with:
+          version: ${{ steps.ver.outputs.version }}
+          target: ${{ matrix.target }}
+          fallback: 'false'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify llvm-sys consumption
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          MAJOR="${VERSION%%.*}"
+          MINOR="$(echo "$VERSION" | cut -d. -f2)"
+          # Independent ground truth for the llvm-sys crate key; MUST match the
+          # derivation in action.yml. LLVM 10..17 -> <MAJOR>0; LLVM 18+ -> <MAJOR><MINOR>.
+          if [ "$MAJOR" -le 17 ]; then KEY="${MAJOR}0"; else KEY="${MAJOR}${MINOR}"; fi
+          echo "LLVM ${VERSION} -> llvm-sys key ${KEY}"
+
+          # (1) Env contract: the action MUST export LLVM_SYS_<key>_PREFIX. Checked
+          # explicitly because llvm-sys would otherwise silently fall back to the
+          # llvm-config the action also puts on PATH, masking a wrong-key regression.
+          VAR="LLVM_SYS_${KEY}_PREFIX"
+          PREFIX="${!VAR:-}"
+          if [ -z "$PREFIX" ]; then
+            echo "::error::${VAR} is not set by the action; llvm-sys for LLVM ${VERSION} reads exactly this variable."
+            env | grep '^LLVM_SYS_' || echo "(no LLVM_SYS_* variables are set)"
+            exit 1
+          fi
+          if [ "${RUNNER_OS}" = "Windows" ]; then PREFIX="$(cygpath -u "$PREFIX")"; fi
+          if [ ! -f "$PREFIX/bin/llvm-config" ] && [ ! -f "$PREFIX/bin/llvm-config.exe" ]; then
+            echo "::error::${VAR}=${PREFIX} has no bin/llvm-config"; exit 1
+          fi
+          echo "env contract OK: ${VAR}=${PREFIX}"
+
+          # (2) End-to-end: build AND run a real llvm-sys consumer. Compiling links
+          # against the archive's libraries; running resolves its runtime libraries.
+          crate="ci/llvmsys-smoke"
+          {
+            echo '[package]'
+            echo 'name = "llvmsys-smoke"'
+            echo 'version = "0.0.0"'
+            echo 'edition = "2021"'
+            echo 'publish = false'
+            echo ''
+            echo '[dependencies]'
+            echo "llvm-sys = \"${KEY}\""
+          } > "${crate}/Cargo.toml"
+          ( cd "${crate}" && cargo run )
