@@ -114,13 +114,19 @@ Prebuilt LLVM archives with full C/C++ API, clang, and LLD for multiple platform
 ```yaml
 steps:
   - name: Install LLVM and Clang
-    uses: yasuo-ozu/llvm-full@main
+    uses: yasuo-ozu/llvm-full@v1
     id: llvm
     with:
       version: "18.1.8"
 ```
 
 This first tries to download a prebuilt archive from this project's releases. If unavailable, it falls back to building from source (with caching) or installing via apt/brew.
+
+> **Versioning.** `@v1` tracks the latest `v1.x` action release and receives
+> backward-compatible fixes automatically. Pin to an exact release (e.g.
+> `@v1.0.0`) for fully reproducible builds. Action releases use low major
+> versions (`v1`, `v2`, …); the high-numbered `v10.0.1`…`v22.1.0` tags are the
+> prebuilt LLVM archive releases, not action versions.
 
 #### Inputs
 
@@ -144,7 +150,7 @@ This first tries to download a prebuilt archive from this project's releases. If
 ```yaml
 steps:
   - name: Install LLVM
-    uses: yasuo-ozu/llvm-full@main
+    uses: yasuo-ozu/llvm-full@v1
     id: llvm
     with:
       version: "18.1.8"
@@ -170,13 +176,13 @@ steps:
 ### Shell Script (Docker / cibuildwheel)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh | bash -s -- 18.1.8
+curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/v1/install-llvm.sh | bash -s -- 18.1.8
 ```
 
 Or with a custom install prefix:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh | bash -s -- 18.1.8 /usr/local
+curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/v1/install-llvm.sh | bash -s -- 18.1.8 /usr/local
 ```
 
 ### cibuildwheel (GitHub Actions)
@@ -203,7 +209,7 @@ jobs:
       # Install LLVM on the host for Windows (not containerized)
       - name: Install LLVM (Windows)
         if: runner.os == 'Windows'
-        uses: yasuo-ozu/llvm-full@main
+        uses: yasuo-ozu/llvm-full@v1
         with:
           version: "18.1.8"
           env: true
@@ -213,7 +219,7 @@ jobs:
         env:
           # Linux: install inside the manylinux/musllinux container
           CIBW_BEFORE_ALL_LINUX: >
-            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
+            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/v1/install-llvm.sh
             | bash -s -- 18.1.8
           CIBW_ENVIRONMENT_LINUX: >
             LLVM_PREFIX=/opt/llvm
@@ -222,7 +228,7 @@ jobs:
             PATH=/opt/llvm/bin:$PATH
           # macOS: install via the shell script
           CIBW_BEFORE_ALL_MACOS: >
-            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/main/install-llvm.sh
+            curl -sSL https://raw.githubusercontent.com/yasuo-ozu/llvm-full/v1/install-llvm.sh
             | bash -s -- 18.1.8
           CIBW_ENVIRONMENT_MACOS: >
             LLVM_PREFIX=/opt/llvm
