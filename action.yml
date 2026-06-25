@@ -43,7 +43,10 @@ runs:
         VERSION="${{ inputs.version }}"
         MAJOR="${VERSION%%.*}"
         MINOR="$(echo "$VERSION" | cut -d. -f2)"
-        if [ "$MAJOR" -le 18 ]; then
+        # llvm-sys key: LLVM 10..17 -> "<MAJOR>0" (100..170); LLVM 18+ ->
+        # "<MAJOR><MINOR>" (181/191/201/211/221). LLVM 18 must map to 181 (its
+        # llvm-sys crate reads LLVM_SYS_181_PREFIX), so the boundary is -le 17.
+        if [ "$MAJOR" -le 17 ]; then
           LLVM_SYS_KEY="${MAJOR}0"
         else
           LLVM_SYS_KEY="${MAJOR}${MINOR}"
@@ -584,10 +587,10 @@ runs:
               freebsd-*|netbsd-*|openbsd-*)
                 ;;
               *)
-                echo "CPATH=${INSTALL_DIR}/include:${CPATH}" >> "$GITHUB_ENV"
-                echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH}" >> "$GITHUB_ENV"
+                echo "CPATH=${INSTALL_DIR}/include:${CPATH:-}" >> "$GITHUB_ENV"
+                echo "LIBRARY_PATH=${INSTALL_DIR}/lib:${LIBRARY_PATH:-}" >> "$GITHUB_ENV"
                 case "$TARGET" in
-                  linux-*) echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH}" >> "$GITHUB_ENV" ;;
+                  linux-*) echo "LD_LIBRARY_PATH=${INSTALL_DIR}/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV" ;;
                 esac
                 ;;
             esac
@@ -598,7 +601,7 @@ runs:
             # DYLD_FALLBACK_LIBRARY_PATH is searched AFTER default paths, so system
             # libs load normally while LLVM-only libs (e.g. libunwind.1.dylib) are
             # still found.
-            echo "DYLD_FALLBACK_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_FALLBACK_LIBRARY_PATH}" >> "$GITHUB_ENV"
+            echo "DYLD_FALLBACK_LIBRARY_PATH=${INSTALL_DIR}/lib:${DYLD_FALLBACK_LIBRARY_PATH:-/usr/local/lib:/usr/lib}" >> "$GITHUB_ENV"
           fi
         fi
 
