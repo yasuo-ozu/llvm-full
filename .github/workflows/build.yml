@@ -878,6 +878,11 @@ jobs:
           # --gc-sections from eliminating them and causing undefined-symbol link errors.
           pacman -S --noconfirm --needed mingw-w64-x86_64-lld
           export PATH="/mingw64/bin:$PATH"
+          # 32-bit cc1plus.exe exhausts its 4 GB VA space on LLVM 20's monolithic
+          # CGBuiltin.cpp even at -O1, so LLVM <= 20 builds at -O0. LLVM 21 split
+          # that file; -O1 works there, and -O0 output for 23+ exceeds GitHub's
+          # 2 GiB release-asset limit once zipped.
+          if [ "$MAJOR" -le 20 ]; then OPT=-O0; else OPT=-O1; fi
           cmake_args=()
           if [ "$MAJOR" -le 11 ]; then
             cmake_args+=(-DCMAKE_POLICY_VERSION_MINIMUM=3.5)
@@ -885,8 +890,8 @@ jobs:
           cmake -S "$SRC_ROOT/llvm" -B "$BUILD_ROOT" -G Ninja \
             "${cmake_args[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_FLAGS_RELEASE="-O0 -DNDEBUG" \
-            -DCMAKE_C_FLAGS_RELEASE="-O0 -DNDEBUG" \
+            -DCMAKE_CXX_FLAGS_RELEASE="$OPT -DNDEBUG" \
+            -DCMAKE_C_FLAGS_RELEASE="$OPT -DNDEBUG" \
             -DCMAKE_INSTALL_PREFIX="$INSTALL_ROOT" \
             -DCMAKE_CXX_FLAGS="-include cstdint" \
             -DCMAKE_C_COMPILER=/mingw32/bin/gcc.exe \
@@ -902,7 +907,7 @@ jobs:
             -DLLVM_ENABLE_DUMP=ON
           # Patch out LLVM-injected -O levels from ninja files.
           find "$BUILD_ROOT" -name "*.ninja" | xargs sed -i \
-            's/-O2/-O0/g; s/-O3/-O0/g; s/-O1/-O0/g'
+            "s/-O[0-3]\b/$OPT/g"
 
       # ── Build ──────────────────────────────────────────────────────
       - name: Build LLVM (MSYS2)
