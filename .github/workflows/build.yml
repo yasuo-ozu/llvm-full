@@ -15,12 +15,126 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: linux-x86_64
+            runner: ubuntu-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-aarch64
+            runner: ubuntu-24.04-arm
+            container: ""
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-x86_64-musl
+            runner: ubuntu-latest
+            container: "alpine:3.21"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-aarch64-musl
+            runner: ubuntu-latest
+            container: "muslcc/x86_64:aarch64-linux-musl"
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: linux-i686
+            runner: ubuntu-latest
+            container: "i386/debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: macos-aarch64
+            runner: macos-latest
+            container: ""
+            llvm_targets: "X86;AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: macos-x86_64
+            runner: macos-15-intel
+            container: ""
+            llvm_targets: "X86;AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: windows-msvc
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: ""
+          - target: windows-aarch64-msvc
+            runner: windows-11-arm
+            container: ""
+            llvm_targets: "AArch64"
+            ext: zip
+            msys2: ""
+          - target: windows-i686-msvc
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: ""
+          - target: windows-gnu
+            runner: windows-latest
+            container: ""
+            llvm_targets: "X86"
+            ext: zip
+            msys2: "MINGW64"
           - target: windows-i686-gnu
             runner: windows-latest
             container: ""
             llvm_targets: "X86"
             ext: zip
             msys2: "MINGW32"
+          - target: freebsd-x86_64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: freebsd-i686
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: netbsd-x86_64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: netbsd-aarch64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: netbsd-i686
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: openbsd-x86_64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
+          - target: openbsd-aarch64
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "AArch64"
+            ext: tar.xz
+            msys2: ""
+          - target: openbsd-i686
+            runner: ubuntu-latest
+            container: "debian:bookworm"
+            llvm_targets: "X86"
+            ext: tar.xz
+            msys2: ""
 
     steps:
       - uses: actions/checkout@v4
